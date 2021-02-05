@@ -1,0 +1,32 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "schemes": [
+    "https"
+  ],
+  "swagger": "2.0",
+  "info": {
+    "description": "The Theeseus is an off-chain service which provides access to blog's entities (posts, likes)",
+    "title": "Theseus",
+    "version": "0.0.1"
+  },
+  "basePath": "/v1",
+  "paths": {},
+  "definitions": {
+    "Error": {
+      "type": "object",
+      "title": "Error ...",
+      "properties": {
+        "error": {
+          "type": "string",
+          "x-go-name": "Error"
+        }
+      },
+      "x-go-package": "github.com/Decentr-net/theseus/internal/server"
+    }
+  }
+}
