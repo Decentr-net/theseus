@@ -2,13 +2,14 @@
 github.com/99designs/keyring
 # github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d
 github.com/ChainSafe/go-schnorrkel
-# github.com/Decentr-net/ariadne v0.0.1
+# github.com/Decentr-net/ariadne v1.0.0
 ## explicit
 github.com/Decentr-net/ariadne
-# github.com/Decentr-net/cerberus v1.0.0
+github.com/Decentr-net/ariadne/mock
+# github.com/Decentr-net/cerberus v1.0.1
 github.com/Decentr-net/cerberus/pkg/api
 github.com/Decentr-net/cerberus/pkg/schema
-# github.com/Decentr-net/decentr v1.0.1
+# github.com/Decentr-net/decentr v1.0.2
 ## explicit
 github.com/Decentr-net/decentr/app
 github.com/Decentr-net/decentr/x/community
@@ -246,8 +247,10 @@ github.com/dvsekhvalnov/jose2go/keys/ecc
 github.com/dvsekhvalnov/jose2go/padding
 # github.com/fsnotify/fsnotify v1.4.7
 github.com/fsnotify/fsnotify
-# github.com/getsentry/sentry-go v0.7.0
+# github.com/getsentry/sentry-go v0.9.0
 github.com/getsentry/sentry-go
+github.com/getsentry/sentry-go/internal/crypto/randutil
+github.com/getsentry/sentry-go/internal/debug
 # github.com/go-chi/chi v4.1.2+incompatible
 ## explicit
 github.com/go-chi/chi

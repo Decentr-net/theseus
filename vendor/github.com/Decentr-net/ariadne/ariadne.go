@@ -31,9 +31,8 @@ type Block struct {
 
 // Fetcher interface for fetching.
 type Fetcher interface {
-	// FetchBlocks starts fetching routine and returns a channel for result.
-	// As FetchBlocks can't make multiple requests to node the channel doesn't have a buffer.
-	FetchBlocks(ctx context.Context, from uint64, opts ...FetchBlocksOption) <-chan Block
+	// FetchBlocks starts fetching routine and runs handleFunc for every block.
+	FetchBlocks(ctx context.Context, from uint64, handleFunc func(b Block) error, opts ...FetchBlocksOption) error
 	// FetchBlock fetches block from blockchain.
 	// If height is zero then the highest block will be requested.
 	FetchBlock(height uint64) (*Block, error)
@@ -64,9 +63,8 @@ func New(node string, cdc *codec.Codec, timeout time.Duration) (Fetcher, error) 
 	}, nil
 }
 
-// FetchBlocks starts fetching routine and returns a channel for result.
-// As FetchBlocks can't make multiple requests to node the channel doesn't have a buffer.
-func (f fetcher) FetchBlocks(ctx context.Context, from uint64, opts ...FetchBlocksOption) <-chan Block {
+// FetchBlocks starts fetching routine and runs handleFunc for every block.
+func (f fetcher) FetchBlocks(ctx context.Context, from uint64, handleFunc func(b Block) error, opts ...FetchBlocksOption) error {
 	cfg := defaultFetchBlockOptions
 	for _, v := range opts {
 		v(&cfg)
@@ -77,17 +75,18 @@ func (f fetcher) FetchBlocks(ctx context.Context, from uint64, opts ...FetchBloc
 		height = from
 	}
 
-	ch := make(chan Block)
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				close(ch)
-				return
-			default:
-				b, err := f.FetchBlock(height)
+	var (
+		b   *Block
+		err error
+	)
 
-				if err != nil {
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			if b == nil {
+				if b, err = f.FetchBlock(height); err != nil {
 					if errors.Is(err, ErrTooHighBlockRequested) {
 						time.Sleep(cfg.retryLastBlockInterval)
 						continue
@@ -97,14 +96,20 @@ func (f fetcher) FetchBlocks(ctx context.Context, from uint64, opts ...FetchBloc
 					time.Sleep(cfg.retryInterval)
 					continue
 				}
-
-				height++
-				ch <- *b
 			}
-		}
-	}()
 
-	return ch
+			if err := handleFunc(*b); err != nil {
+				cfg.errHandler(b.Height, err)
+				if !cfg.skipError {
+					time.Sleep(cfg.retryInterval)
+					continue
+				}
+			}
+
+			b = nil
+			height++
+		}
+	}
 }
 
 // FetchBlock fetches block from blockchain.

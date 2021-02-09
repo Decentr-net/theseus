@@ -11,8 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Decentr-net/ariadne"
-	decentr "github.com/Decentr-net/decentr/app"
 	"github.com/go-chi/chi"
 	"github.com/golang-migrate/migrate/v4"
 	migratep "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -22,12 +20,16 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/Decentr-net/ariadne"
+	decentr "github.com/Decentr-net/decentr/app"
 	"github.com/Decentr-net/logrus/sentry"
 
+	"github.com/Decentr-net/theseus/internal/consumer"
 	"github.com/Decentr-net/theseus/internal/consumer/blockchain"
 	"github.com/Decentr-net/theseus/internal/health"
 	"github.com/Decentr-net/theseus/internal/server"
 	"github.com/Decentr-net/theseus/internal/service"
+	serviceimpl "github.com/Decentr-net/theseus/internal/service/impl"
 	"github.com/Decentr-net/theseus/internal/storage/postgres"
 )
 
@@ -92,7 +94,9 @@ func main() {
 
 	db := mustGetDB()
 
-	server.SetupRouter(service.New(postgres.New(db)), r)
+	s := serviceimpl.New(postgres.New(db))
+
+	server.SetupRouter(s, r)
 	health.SetupRouter(r,
 		health.SubjectPinger("postgres", db.PingContext),
 	)
@@ -102,9 +106,13 @@ func main() {
 		Handler: r,
 	}
 
-	gr, _ := errgroup.WithContext(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+
+	gr, _ := errgroup.WithContext(ctx)
 	gr.Go(srv.ListenAndServe)
-	gr.Go(mustRunConsumer)
+	gr.Go(func() error {
+		return mustGetConsumer(s).Run(ctx)
+	})
 
 	gr.Go(func() error {
 		sigs := make(chan os.Signal, 1)
@@ -114,6 +122,7 @@ func main() {
 
 		logrus.Infof("terminating by %s signal", s)
 
+		cancel()
 		if err := srv.Shutdown(context.Background()); err != nil {
 			logrus.WithError(err).Error("failed to gracefully shutdown server")
 		}
@@ -171,11 +180,11 @@ func mustGetDB() *sql.DB {
 	return db
 }
 
-func mustRunConsumer() error {
+func mustGetConsumer(s service.Service) consumer.Consumer {
 	fetcher, err := ariadne.New(opts.BlockchainNode, decentr.MakeCodec(), opts.BlockchainTimeout)
 	if err != nil {
-		return fmt.Errorf("failed to create blocks fetcher: %w", err)
+		logrus.WithError(err).Fatal("failed to create blocks fetcher")
 	}
 
-	return blockchain.New(fetcher, nil).Run(context.Background(), 0)
+	return blockchain.New(fetcher, s)
 }

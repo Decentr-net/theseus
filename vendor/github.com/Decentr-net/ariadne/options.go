@@ -15,12 +15,15 @@ type FetchBlocksOptions struct {
 	retryInterval time.Duration
 	// errHandler will be called when fetcher will get an error.
 	errHandler func(height uint64, err error)
+	// skipError disable retries of block handling with handleFunc.
+	skipError bool
 }
 
 var defaultFetchBlockOptions = FetchBlocksOptions{
 	retryLastBlockInterval: time.Second,
 	retryInterval:          time.Second,
 	errHandler:             func(height uint64, err error) {},
+	skipError:              false,
 }
 
 // WithRetryLastBlockInterval sets how long should fetcher wait if fetcher got ErrTooHighBlockRequested.
@@ -41,5 +44,12 @@ func WithRetryInterval(d time.Duration) FetchBlocksOption {
 func WithErrHandler(f func(height uint64, err error)) FetchBlocksOption {
 	return func(opts *FetchBlocksOptions) {
 		opts.errHandler = f
+	}
+}
+
+// WithSkipError disable retries of block handling with handleFunc.
+func WithSkipError(b bool) FetchBlocksOption {
+	return func(f *FetchBlocksOptions) {
+		f.skipError = b
 	}
 }

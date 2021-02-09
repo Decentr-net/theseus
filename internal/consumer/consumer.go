@@ -1,13 +1,13 @@
+// Package consumer contains interface of blocks consumer.
 package consumer
 
 import (
 	"context"
-
-	cosmos "github.com/cosmos/cosmos-sdk/types"
 )
 
-type MsgHandler func(msg cosmos.Msg) error
+//go:generate mockgen -destination=./mock/consumer_mock.go -package=consumer -source=consumer.go
 
+// Consumer consumes blocks from decentr blockchain.
 type Consumer interface {
-	Run(ctx context.Context, from uint64) error
+	Run(ctx context.Context) error
 }

@@ -16,9 +16,10 @@ Short example:
 f, err := ariadne.New(nodeAddr, cdc, time.Minute)
 if err != nil { panic(err) }
 
-for b := range f.FetchBlocks(b.Height) {
+_ = f.FetchBlocks(context.Background(), 1, func (b Block) error {
     fmt.Sprintf("%+v\n", b)
-}
+    return nil
+})
 ````
 
 You have to look at detailed example [here](example/example.go) 

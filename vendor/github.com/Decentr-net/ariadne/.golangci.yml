@@ -80,6 +80,7 @@ linters:
     - funlen
     - gofumpt
     - testpackage
+    - goerr113
 
 issues:
   exclude-rules:

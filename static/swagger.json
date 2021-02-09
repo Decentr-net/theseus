@@ -10,7 +10,7 @@
   ],
   "swagger": "2.0",
   "info": {
-    "description": "The Theeseus is an off-chain service which provides access to blog's entities (posts, likes)",
+    "description": "The Theseus is an off-chain service which provides access to community entities (posts, likes, follows)",
     "title": "Theseus",
     "version": "0.0.1"
   },
