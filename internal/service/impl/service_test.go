@@ -19,9 +19,8 @@ import (
 
 func TestSrv_OnHeight(t *testing.T) {
 	tt := []struct {
-		name         string
-		height       uint64
-		getHeightErr error
+		name   string
+		height uint64
 
 		err error
 	}{
@@ -30,20 +29,9 @@ func TestSrv_OnHeight(t *testing.T) {
 			height: 100,
 		},
 		{
-			name:   "low height",
-			height: 101,
-			err:    service.ErrRequestedHeightIsTooLow,
-		},
-		{
-			name:   "high height",
-			height: 99,
-			err:    service.ErrRequestedHeightIsTooHigh,
-		},
-		{
-			name:         "GetHeight failed",
-			height:       100,
-			getHeightErr: context.Canceled,
-			err:          context.Canceled,
+			name:   "fail",
+			height: 100,
+			err:    context.Canceled,
 		},
 	}
 
@@ -57,14 +45,12 @@ func TestSrv_OnHeight(t *testing.T) {
 
 			srv := New(s)
 
-			s.EXPECT().OnLockedHeight(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, f func(s storageinterface.Storage) error) error {
+			s.EXPECT().WithLockedHeight(gomock.Any(), tc.height, gomock.Any()).DoAndReturn(func(_ context.Context, _ uint64, f func(s storageinterface.Storage) error) error {
 				return f(s)
 			})
 
-			s.EXPECT().GetHeight(gomock.Any()).Return(tc.height, tc.getHeightErr)
-
-			err := srv.OnHeight(context.Background(), 101, func(s service.Service) error {
-				return nil
+			err := srv.OnHeight(context.Background(), tc.height, func(s service.Service) error {
+				return tc.err
 			})
 
 			require.True(t, errors.Is(err, tc.err))

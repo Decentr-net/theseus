@@ -37,18 +37,18 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
 }
 
-// OnLockedHeight mocks base method
-func (m *MockStorage) OnLockedHeight(ctx context.Context, f func(storage.Storage) error) error {
+// WithLockedHeight mocks base method
+func (m *MockStorage) WithLockedHeight(ctx context.Context, height uint64, f func(storage.Storage) error) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OnLockedHeight", ctx, f)
+	ret := m.ctrl.Call(m, "WithLockedHeight", ctx, height, f)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// OnLockedHeight indicates an expected call of OnLockedHeight
-func (mr *MockStorageMockRecorder) OnLockedHeight(ctx, f interface{}) *gomock.Call {
+// WithLockedHeight indicates an expected call of WithLockedHeight
+func (mr *MockStorageMockRecorder) WithLockedHeight(ctx, height, f interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnLockedHeight", reflect.TypeOf((*MockStorage)(nil).OnLockedHeight), ctx, f)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithLockedHeight", reflect.TypeOf((*MockStorage)(nil).WithLockedHeight), ctx, height, f)
 }
 
 // GetHeight mocks base method
@@ -78,6 +78,21 @@ func (m *MockStorage) CreatePost(ctx context.Context, p *entities.Post) error {
 func (mr *MockStorageMockRecorder) CreatePost(ctx, p interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePost", reflect.TypeOf((*MockStorage)(nil).CreatePost), ctx, p)
+}
+
+// GetPost mocks base method
+func (m *MockStorage) GetPost(ctx context.Context, owner, uuid string) (*entities.Post, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPost", ctx, owner, uuid)
+	ret0, _ := ret[0].(*entities.Post)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPost indicates an expected call of GetPost
+func (mr *MockStorageMockRecorder) GetPost(ctx, owner, uuid interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPost", reflect.TypeOf((*MockStorage)(nil).GetPost), ctx, owner, uuid)
 }
 
 // DeletePost mocks base method

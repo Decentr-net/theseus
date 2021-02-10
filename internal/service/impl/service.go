@@ -3,6 +3,7 @@ package impl
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -19,22 +20,12 @@ type srv struct {
 }
 
 func (s srv) OnHeight(ctx context.Context, height uint64, f func(s service.Service) error) error {
-	if err := s.s.OnLockedHeight(ctx, func(s storage.Storage) error {
-		h, err := s.GetHeight(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to get height on s side: %w", err)
-		}
-
-		if height > h+1 {
-			return fmt.Errorf("%w height=%d", service.ErrRequestedHeightIsTooHigh, h)
-		}
-
-		if height != h+1 {
-			return fmt.Errorf("%w height=%d", service.ErrRequestedHeightIsTooLow, h)
-		}
-
+	if err := s.s.WithLockedHeight(ctx, height, func(s storage.Storage) error {
 		return f(New(s))
 	}); err != nil {
+		if errors.Is(err, storage.ErrRequestedHeightIsTooLow) {
+			return service.ErrRequestedHeightIsTooLow
+		}
 		return err
 	}
 

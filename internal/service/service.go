@@ -13,9 +13,6 @@ import (
 
 //go:generate mockgen -destination=./mock/service.go -package=mock -source=service.go
 
-// ErrRequestedHeightIsTooHigh returned when the height requested in OnHeight function is more than expected.
-var ErrRequestedHeightIsTooHigh = errors.New("requested height is too high")
-
 // ErrRequestedHeightIsTooLow returned when the height requested in OnHeight function is less than expected.
 var ErrRequestedHeightIsTooLow = errors.New("requested height is too low")
 
