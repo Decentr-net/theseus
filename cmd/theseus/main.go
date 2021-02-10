@@ -43,8 +43,10 @@ var opts = struct {
 	PostgresMaxIdleConnections int    `long:"postgres.max_idle_connections" env:"POSTGRES_MAX_IDLE_CONNECTIONS" default:"5" description:"postgres maximal idle connections count"`
 	PostgresMigrations         string `long:"postgres.migrations" env:"POSTGRES_MIGRATIONS" default:"migrations/postgres" description:"postgres migrations directory"`
 
-	BlockchainNode    string        `long:"blockchain.node" env:"BLOCKCHAIN_NODE" default:"http://zeus.testnet.decentr.xyz:26657" description:"decentr node address"`
-	BlockchainTimeout time.Duration `long:"blockchain.timeout" env:"BLOCKCHAIN_TIMEOUT" default:"5s" description:"timeout for requests to blockchain node"`
+	BlockchainNode                   string        `long:"blockchain.node" env:"BLOCKCHAIN_NODE" default:"http://zeus.testnet.decentr.xyz:26657" description:"decentr node address"`
+	BlockchainTimeout                time.Duration `long:"blockchain.timeout" env:"BLOCKCHAIN_TIMEOUT" default:"5s" description:"timeout for requests to blockchain node"`
+	BlockchainRetryInterval          time.Duration `long:"blockchain.retry_interval" env:"BLOCKCHAIN_RETRY_INTERVAL" default:"2s" description:"interval to be waited on error before retry"`
+	BlockchainLastBlockRetryInterval time.Duration `long:"blockchain.last_block_retry_interval" env:"BLOCKCHAIN_LAST_BLOCK_RETRY_INTERVAL" default:"1s" description:"duration to be waited when new block isn't produced before retry"`
 
 	LogLevel  string `long:"log.level" env:"LOG_LEVEL" default:"info" description:"Log level" choice:"debug" choice:"info" choice:"warning" choice:"error"`
 	SentryDSN string `long:"sentry.dsn" env:"SENTRY_DSN" description:"sentry dsn"`
@@ -186,5 +188,5 @@ func mustGetConsumer(s service.Service) consumer.Consumer {
 		logrus.WithError(err).Fatal("failed to create blocks fetcher")
 	}
 
-	return blockchain.New(fetcher, s)
+	return blockchain.New(fetcher, s, opts.BlockchainRetryInterval, opts.BlockchainLastBlockRetryInterval)
 }

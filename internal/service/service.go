@@ -3,6 +3,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	community "github.com/Decentr-net/decentr/x/community/types"
@@ -12,12 +13,18 @@ import (
 
 //go:generate mockgen -destination=./mock/service.go -package=mock -source=service.go
 
+// ErrRequestedHeightIsTooHigh returned when the height requested in OnHeight function is more than expected.
+var ErrRequestedHeightIsTooHigh = errors.New("requested height is too high")
+
+// ErrRequestedHeightIsTooLow returned when the height requested in OnHeight function is less than expected.
+var ErrRequestedHeightIsTooLow = errors.New("requested height is too low")
+
 // Service ...
 type Service interface {
-	OnHeight(height uint64, f func(s Service) error) error
-	GetHeight() (uint64, error)
+	OnHeight(ctx context.Context, height uint64, f func(s Service) error) error
+	GetHeight(ctx context.Context) (uint64, error)
 
 	CreatePost(ctx context.Context, p *entities.Post) error
 	DeletePost(ctx context.Context, postOwner, postUUID string, timestamp time.Time, deletedByUUID string) error
-	SetLike(ctx context.Context, postOnwer, postUUID string, weight community.LikeWeight, timestamp time.Time, likedBy string) error
+	SetLike(ctx context.Context, postOwner, postUUID string, weight community.LikeWeight, timestamp time.Time, likedBy string) error
 }

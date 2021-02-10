@@ -19,15 +19,23 @@ type pg struct {
 	db *sqlx.DB
 }
 
-func (p2 pg) CreatePost(ctx context.Context, p *entities.Post) error {
+func (s pg) OnLockedHeight(ctx context.Context, f func(s storage.Storage) error) error {
 	panic("implement me")
 }
 
-func (p2 pg) DeletePost(ctx context.Context, owner string, id string, timestamp time.Time, deletedBy string) error {
+func (s pg) GetHeight(ctx context.Context) (uint64, error) {
 	panic("implement me")
 }
 
-func (p2 pg) SetLike(ctx context.Context, owner string, id string, weight types.LikeWeight, timestamp time.Time, likeOwner string) error {
+func (s pg) CreatePost(ctx context.Context, p *entities.Post) error {
+	panic("implement me")
+}
+
+func (s pg) DeletePost(ctx context.Context, postOwner string, postUUID string, timestamp time.Time, deletedBy string) error {
+	panic("implement me")
+}
+
+func (s pg) SetLike(ctx context.Context, postOwner string, postUUID string, weight types.LikeWeight, timestamp time.Time, likeOwner string) error {
 	panic("implement me")
 }
 

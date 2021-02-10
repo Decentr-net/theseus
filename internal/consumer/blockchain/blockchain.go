@@ -3,6 +3,7 @@ package blockchain
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -36,10 +37,13 @@ type blockchain struct {
 }
 
 // New returns new blockchain instance.
-func New(f ariadne.Fetcher, s service.Service) consumer.Consumer {
+func New(f ariadne.Fetcher, s service.Service, retryInterval, retryLastBlockInterval time.Duration) consumer.Consumer {
 	return blockchain{
 		f: f,
 		s: s,
+
+		retryInterval:          retryInterval,
+		retryLastBlockInterval: retryLastBlockInterval,
 	}
 }
 
@@ -48,7 +52,7 @@ func logError(h uint64, err error) {
 }
 
 func (b blockchain) Run(ctx context.Context) error {
-	from, err := b.s.GetHeight()
+	from, err := b.s.GetHeight(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get current height: %w", err)
 	}
@@ -63,7 +67,7 @@ func (b blockchain) Run(ctx context.Context) error {
 
 func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Block) error {
 	return func(block ariadne.Block) error {
-		return b.s.OnHeight(block.Height, func(s service.Service) error {
+		err := b.s.OnHeight(ctx, block.Height, func(s service.Service) error {
 			for _, msg := range block.Messages() {
 				switch msg := msg.(type) {
 				case community.MsgCreatePost:
@@ -97,5 +101,12 @@ func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Blo
 
 			return nil
 		})
+
+		// A block is processed, we shouldn't retry processing
+		if errors.Is(err, service.ErrRequestedHeightIsTooLow) {
+			return nil
+		}
+
+		return err
 	}
 }
