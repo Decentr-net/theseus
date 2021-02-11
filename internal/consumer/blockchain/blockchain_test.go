@@ -27,9 +27,9 @@ func TestBlockchain_Run(t *testing.T) {
 
 	f, s := ariadnemock.NewMockFetcher(ctrl), servicemock.NewMockService(ctrl)
 
-	b := New(f, s)
+	b := New(f, s, time.Nanosecond, time.Nanosecond)
 
-	s.EXPECT().GetHeight().Return(uint64(1), nil)
+	s.EXPECT().GetHeight(gomock.Any()).Return(uint64(1), nil)
 
 	f.EXPECT().FetchBlocks(gomock.Any(), uint64(1), gomock.Any(), gomock.Any()).Return(nil)
 
@@ -41,9 +41,9 @@ func TestBlockchain_Run_Error(t *testing.T) {
 
 	f, s := ariadnemock.NewMockFetcher(ctrl), servicemock.NewMockService(ctrl)
 
-	b := New(f, s)
+	b := New(f, s, time.Nanosecond, time.Nanosecond)
 
-	s.EXPECT().GetHeight().Return(uint64(1), nil)
+	s.EXPECT().GetHeight(gomock.Any()).Return(uint64(1), nil)
 
 	f.EXPECT().FetchBlocks(gomock.Any(), uint64(1), gomock.Any(), gomock.Any()).Return(errTest)
 
@@ -128,7 +128,7 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 
 			s := servicemock.NewMockService(gomock.NewController(t))
 
-			s.EXPECT().OnHeight(uint64(1), gomock.Any()).DoAndReturn(func(_ uint64, f func(_ service.Service) error) error {
+			s.EXPECT().OnHeight(gomock.Any(), uint64(1), gomock.Any()).DoAndReturn(func(_ context.Context, _ uint64, f func(_ service.Service) error) error {
 				return f(s)
 			})
 			tc.expect(s)
@@ -146,4 +146,20 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 			require.NoError(t, blockchain{s: s}.processBlockFunc(context.Background())(block))
 		})
 	}
+}
+
+func TestBlockchain_processBlockFunc_errors(t *testing.T) {
+	s := servicemock.NewMockService(gomock.NewController(t))
+
+	s.EXPECT().OnHeight(gomock.Any(), uint64(1), gomock.Any()).DoAndReturn(func(_ context.Context, _ uint64, f func(_ service.Service) error) error {
+		return service.ErrRequestedHeightIsTooHigh
+	})
+
+	require.Error(t, blockchain{s: s}.processBlockFunc(context.Background())(ariadne.Block{Height: 1}))
+
+	s.EXPECT().OnHeight(gomock.Any(), uint64(1), gomock.Any()).DoAndReturn(func(_ context.Context, _ uint64, f func(_ service.Service) error) error {
+		return service.ErrRequestedHeightIsTooLow
+	})
+
+	require.NoError(t, blockchain{s: s}.processBlockFunc(context.Background())(ariadne.Block{Height: 1}))
 }

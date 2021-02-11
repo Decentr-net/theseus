@@ -38,32 +38,32 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 }
 
 // OnHeight mocks base method
-func (m *MockService) OnHeight(height uint64, f func(service.Service) error) error {
+func (m *MockService) OnHeight(ctx context.Context, height uint64, f func(service.Service) error) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OnHeight", height, f)
+	ret := m.ctrl.Call(m, "OnHeight", ctx, height, f)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // OnHeight indicates an expected call of OnHeight
-func (mr *MockServiceMockRecorder) OnHeight(height, f interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) OnHeight(ctx, height, f interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnHeight", reflect.TypeOf((*MockService)(nil).OnHeight), height, f)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnHeight", reflect.TypeOf((*MockService)(nil).OnHeight), ctx, height, f)
 }
 
 // GetHeight mocks base method
-func (m *MockService) GetHeight() (uint64, error) {
+func (m *MockService) GetHeight(ctx context.Context) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetHeight")
+	ret := m.ctrl.Call(m, "GetHeight", ctx)
 	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetHeight indicates an expected call of GetHeight
-func (mr *MockServiceMockRecorder) GetHeight() *gomock.Call {
+func (mr *MockServiceMockRecorder) GetHeight(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHeight", reflect.TypeOf((*MockService)(nil).GetHeight))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHeight", reflect.TypeOf((*MockService)(nil).GetHeight), ctx)
 }
 
 // CreatePost mocks base method
@@ -95,15 +95,15 @@ func (mr *MockServiceMockRecorder) DeletePost(ctx, postOwner, postUUID, timestam
 }
 
 // SetLike mocks base method
-func (m *MockService) SetLike(ctx context.Context, postOnwer, postUUID string, weight types.LikeWeight, timestamp time.Time, likedBy string) error {
+func (m *MockService) SetLike(ctx context.Context, postOwner, postUUID string, weight types.LikeWeight, timestamp time.Time, likedBy string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetLike", ctx, postOnwer, postUUID, weight, timestamp, likedBy)
+	ret := m.ctrl.Call(m, "SetLike", ctx, postOwner, postUUID, weight, timestamp, likedBy)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetLike indicates an expected call of SetLike
-func (mr *MockServiceMockRecorder) SetLike(ctx, postOnwer, postUUID, weight, timestamp, likedBy interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) SetLike(ctx, postOwner, postUUID, weight, timestamp, likedBy interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLike", reflect.TypeOf((*MockService)(nil).SetLike), ctx, postOnwer, postUUID, weight, timestamp, likedBy)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLike", reflect.TypeOf((*MockService)(nil).SetLike), ctx, postOwner, postUUID, weight, timestamp, likedBy)
 }
