@@ -1,23 +1,23 @@
+// Package service contains interface for service business-logic.
 package service
 
 import (
-	"github.com/Decentr-net/theseus/internal/storage"
+	"context"
+	"time"
+
+	community "github.com/Decentr-net/decentr/x/community/types"
+
+	"github.com/Decentr-net/theseus/internal/entities"
 )
 
-//go:generate mockgen -destination=./service_mock.go -package=service -source=service.go
+//go:generate mockgen -destination=./mock/service.go -package=mock -source=service.go
 
 // Service ...
 type Service interface {
-}
+	OnHeight(height uint64, f func(s Service) error) error
+	GetHeight() (uint64, error)
 
-// Service ...
-type service struct {
-	storage storage.Storage
-}
-
-// New creates new instance of service.
-func New(storage storage.Storage) Service {
-	return &service{
-		storage: storage,
-	}
+	CreatePost(ctx context.Context, p *entities.Post) error
+	DeletePost(ctx context.Context, postOwner, postUUID string, timestamp time.Time, deletedByUUID string) error
+	SetLike(ctx context.Context, postOnwer, postUUID string, weight community.LikeWeight, timestamp time.Time, likedBy string) error
 }

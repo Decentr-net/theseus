@@ -5,7 +5,12 @@
 package storage
 
 import (
+	context "context"
+	types "github.com/Decentr-net/decentr/x/community/types"
+	entities "github.com/Decentr-net/theseus/internal/entities"
 	gomock "github.com/golang/mock/gomock"
+	reflect "reflect"
+	time "time"
 )
 
 // MockStorage is a mock of Storage interface
@@ -29,4 +34,46 @@ func NewMockStorage(ctrl *gomock.Controller) *MockStorage {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
+}
+
+// CreatePost mocks base method
+func (m *MockStorage) CreatePost(ctx context.Context, p *entities.Post) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreatePost", ctx, p)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreatePost indicates an expected call of CreatePost
+func (mr *MockStorageMockRecorder) CreatePost(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePost", reflect.TypeOf((*MockStorage)(nil).CreatePost), ctx, p)
+}
+
+// DeletePost mocks base method
+func (m *MockStorage) DeletePost(ctx context.Context, owner, id string, timestamp time.Time, deletedBy string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeletePost", ctx, owner, id, timestamp, deletedBy)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeletePost indicates an expected call of DeletePost
+func (mr *MockStorageMockRecorder) DeletePost(ctx, owner, id, timestamp, deletedBy interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePost", reflect.TypeOf((*MockStorage)(nil).DeletePost), ctx, owner, id, timestamp, deletedBy)
+}
+
+// SetLike mocks base method
+func (m *MockStorage) SetLike(ctx context.Context, owner, id string, weight types.LikeWeight, timestamp time.Time, likeOwner string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetLike", ctx, owner, id, weight, timestamp, likeOwner)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetLike indicates an expected call of SetLike
+func (mr *MockStorageMockRecorder) SetLike(ctx, owner, id, weight, timestamp, likeOwner interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLike", reflect.TypeOf((*MockStorage)(nil).SetLike), ctx, owner, id, weight, timestamp, likeOwner)
 }

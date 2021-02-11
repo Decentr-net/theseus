@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/golang-migrate/migrate/v4"
@@ -19,11 +20,16 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/Decentr-net/ariadne"
+	decentr "github.com/Decentr-net/decentr/app"
 	"github.com/Decentr-net/logrus/sentry"
 
+	"github.com/Decentr-net/theseus/internal/consumer"
+	"github.com/Decentr-net/theseus/internal/consumer/blockchain"
 	"github.com/Decentr-net/theseus/internal/health"
 	"github.com/Decentr-net/theseus/internal/server"
 	"github.com/Decentr-net/theseus/internal/service"
+	serviceimpl "github.com/Decentr-net/theseus/internal/service/impl"
 	"github.com/Decentr-net/theseus/internal/storage/postgres"
 )
 
@@ -37,7 +43,8 @@ var opts = struct {
 	PostgresMaxIdleConnections int    `long:"postgres.max_idle_connections" env:"POSTGRES_MAX_IDLE_CONNECTIONS" default:"5" description:"postgres maximal idle connections count"`
 	PostgresMigrations         string `long:"postgres.migrations" env:"POSTGRES_MIGRATIONS" default:"migrations/postgres" description:"postgres migrations directory"`
 
-	BlockchainNode string `long:"blockchain.node" env:"BLOCKCHAIN_NODE" default:"http://zeus.testnet.decentr.xyz:26657" description:"decentr node address"`
+	BlockchainNode    string        `long:"blockchain.node" env:"BLOCKCHAIN_NODE" default:"http://zeus.testnet.decentr.xyz:26657" description:"decentr node address"`
+	BlockchainTimeout time.Duration `long:"blockchain.timeout" env:"BLOCKCHAIN_TIMEOUT" default:"5s" description:"timeout for requests to blockchain node"`
 
 	LogLevel  string `long:"log.level" env:"LOG_LEVEL" default:"info" description:"Log level" choice:"debug" choice:"info" choice:"warning" choice:"error"`
 	SentryDSN string `long:"sentry.dsn" env:"SENTRY_DSN" description:"sentry dsn"`
@@ -87,7 +94,9 @@ func main() {
 
 	db := mustGetDB()
 
-	server.SetupRouter(service.New(postgres.New(db)), r)
+	s := serviceimpl.New(postgres.New(db))
+
+	server.SetupRouter(s, r)
 	health.SetupRouter(r,
 		health.SubjectPinger("postgres", db.PingContext),
 	)
@@ -97,8 +106,13 @@ func main() {
 		Handler: r,
 	}
 
-	gr, _ := errgroup.WithContext(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+
+	gr, _ := errgroup.WithContext(ctx)
 	gr.Go(srv.ListenAndServe)
+	gr.Go(func() error {
+		return mustGetConsumer(s).Run(ctx)
+	})
 
 	gr.Go(func() error {
 		sigs := make(chan os.Signal, 1)
@@ -108,6 +122,7 @@ func main() {
 
 		logrus.Infof("terminating by %s signal", s)
 
+		cancel()
 		if err := srv.Shutdown(context.Background()); err != nil {
 			logrus.WithError(err).Error("failed to gracefully shutdown server")
 		}
@@ -163,4 +178,13 @@ func mustGetDB() *sql.DB {
 	}
 
 	return db
+}
+
+func mustGetConsumer(s service.Service) consumer.Consumer {
+	fetcher, err := ariadne.New(opts.BlockchainNode, decentr.MakeCodec(), opts.BlockchainTimeout)
+	if err != nil {
+		logrus.WithError(err).Fatal("failed to create blocks fetcher")
+	}
+
+	return blockchain.New(fetcher, s)
 }

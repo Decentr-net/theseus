@@ -25,7 +25,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Decentr-net/theseus/internal/service"
+	service "github.com/Decentr-net/theseus/internal/service"
 )
 
 //go:generate swagger generate spec -t swagger -m -c . -o ../../static/swagger.json
