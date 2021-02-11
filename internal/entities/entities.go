@@ -16,6 +16,4 @@ type Post struct {
 	PreviewImage string
 	Text         string
 	CreatedAt    time.Time
-	DeletedAt    *time.Time
-	DeletedBy    *string
 }

@@ -79,8 +79,6 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 					PreviewImage: "url",
 					Text:         "text",
 					CreatedAt:    timestamp,
-					DeletedAt:    nil,
-					DeletedBy:    nil,
 				})
 			},
 		},
@@ -152,7 +150,7 @@ func TestBlockchain_processBlockFunc_errors(t *testing.T) {
 	s := servicemock.NewMockService(gomock.NewController(t))
 
 	s.EXPECT().OnHeight(gomock.Any(), uint64(1), gomock.Any()).DoAndReturn(func(_ context.Context, _ uint64, f func(_ service.Service) error) error {
-		return service.ErrRequestedHeightIsTooHigh
+		return context.Canceled
 	})
 
 	require.Error(t, blockchain{s: s}.processBlockFunc(context.Background())(ariadne.Block{Height: 1}))
