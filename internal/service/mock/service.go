@@ -66,6 +66,48 @@ func (mr *MockServiceMockRecorder) GetHeight(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHeight", reflect.TypeOf((*MockService)(nil).GetHeight), ctx)
 }
 
+// SetProfile mocks base method
+func (m *MockService) SetProfile(ctx context.Context, p *entities.Profile) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetProfile", ctx, p)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetProfile indicates an expected call of SetProfile
+func (mr *MockServiceMockRecorder) SetProfile(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProfile", reflect.TypeOf((*MockService)(nil).SetProfile), ctx, p)
+}
+
+// Follow mocks base method
+func (m *MockService) Follow(ctx context.Context, follower, followee string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Follow", ctx, follower, followee)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Follow indicates an expected call of Follow
+func (mr *MockServiceMockRecorder) Follow(ctx, follower, followee interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Follow", reflect.TypeOf((*MockService)(nil).Follow), ctx, follower, followee)
+}
+
+// Unfollow mocks base method
+func (m *MockService) Unfollow(ctx context.Context, follower, followee string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Unfollow", ctx, follower, followee)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Unfollow indicates an expected call of Unfollow
+func (mr *MockServiceMockRecorder) Unfollow(ctx, follower, followee interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unfollow", reflect.TypeOf((*MockService)(nil).Unfollow), ctx, follower, followee)
+}
+
 // CreatePost mocks base method
 func (m *MockService) CreatePost(ctx context.Context, p *entities.Post) error {
 	m.ctrl.T.Helper()

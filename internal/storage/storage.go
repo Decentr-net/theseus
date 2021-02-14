@@ -27,6 +27,13 @@ var ErrRequestedHeightIsTooLow = errors.New("requested height is too low")
 type Storage interface {
 	WithLockedHeight(ctx context.Context, height uint64, f func(s Storage) error) error
 	GetHeight(ctx context.Context) (uint64, error)
+
+	GetProfiles(ctx context.Context, addr []string) ([]*entities.Profile, error)
+	SetProfile(ctx context.Context, p *entities.Profile) error
+
+	Follow(ctx context.Context, follower, followee string) error
+	Unfollow(ctx context.Context, follower, followee string) error
+
 	CreatePost(ctx context.Context, p *entities.Post) error
 	GetPost(ctx context.Context, owner, uuid string) (*entities.Post, error)
 	DeletePost(ctx context.Context, postOwner string, postUUID string, timestamp time.Time, deletedBy string) error

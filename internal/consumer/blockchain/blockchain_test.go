@@ -14,6 +14,7 @@ import (
 	"github.com/Decentr-net/ariadne"
 	ariadnemock "github.com/Decentr-net/ariadne/mock"
 	community "github.com/Decentr-net/decentr/x/community/types"
+	profile "github.com/Decentr-net/decentr/x/profile/types"
 
 	"github.com/Decentr-net/theseus/internal/entities"
 	"github.com/Decentr-net/theseus/internal/service"
@@ -53,6 +54,9 @@ func TestBlockchain_Run_Error(t *testing.T) {
 func TestBlockchain_processBlockFunc(t *testing.T) {
 	timestamp := time.Now()
 	owner, err := sdk.AccAddressFromBech32("decentr1u9slwz3sje8j94ccpwlslflg0506yc8y2ylmtz")
+	require.NoError(t, err)
+
+	owner2, err := sdk.AccAddressFromBech32("decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz")
 	require.NoError(t, err)
 
 	tt := []struct {
@@ -115,6 +119,50 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 					timestamp,
 					"decentr1u9slwz3sje8j94ccpwlslflg0506yc8y2ylmtz",
 				)
+			},
+		},
+		{
+			name: "set_profile",
+			msg: profile.MsgSetPublic{
+				Owner: owner,
+				Public: profile.Public{
+					FirstName: "first_name",
+					LastName:  "last_name",
+					Avatar:    "avatar",
+					Gender:    "male",
+					Birthday:  "01.02.2006",
+				},
+			},
+			expect: func(s *servicemock.MockService) {
+				s.EXPECT().SetProfile(gomock.Any(), &entities.Profile{
+					Address:   owner.String(),
+					FirstName: "first_name",
+					LastName:  "last_name",
+					Avatar:    "avatar",
+					Gender:    "male",
+					Birthday:  "01.02.2006",
+					CreatedAt: timestamp,
+				})
+			},
+		},
+		{
+			name: "follow",
+			msg: community.MsgFollow{
+				Owner: owner,
+				Whom:  owner2,
+			},
+			expect: func(s *servicemock.MockService) {
+				s.EXPECT().Follow(gomock.Any(), owner.String(), owner2.String())
+			},
+		},
+		{
+			name: "unfollow",
+			msg: community.MsgUnfollow{
+				Owner: owner,
+				Whom:  owner2,
+			},
+			expect: func(s *servicemock.MockService) {
+				s.EXPECT().Unfollow(gomock.Any(), owner.String(), owner2.String())
 			},
 		},
 	}

@@ -37,6 +37,16 @@ type postDTO struct {
 	CreatedAt    time.Time `db:"created_at"`
 }
 
+type profileDTO struct {
+	Address   string    `db:"address"`
+	FirstName string    `db:"first_name"`
+	LastName  string    `db:"last_name"`
+	Avatar    string    `db:"avatar"`
+	Gender    string    `db:"gender"`
+	Birthday  string    `db:"birthday"`
+	CreatedAt time.Time `db:"created_at"`
+}
+
 func (s pg) WithLockedHeight(ctx context.Context, height uint64, f func(s storage.Storage) error) error {
 	db, ok := s.ext.(*sqlx.DB)
 	if !ok {
@@ -101,6 +111,65 @@ func (s pg) GetHeight(ctx context.Context) (uint64, error) {
 
 func (s pg) SetHeight(ctx context.Context, h uint64) error {
 	if _, err := s.ext.ExecContext(ctx, `UPDATE height SET height=$1`, h); err != nil {
+		return fmt.Errorf("failed to exec: %w", err)
+	}
+
+	return nil
+}
+
+func (s pg) GetProfiles(ctx context.Context, addr []string) ([]*entities.Profile, error) {
+	addr = stringsUnique(addr)
+
+	query, args, err := sqlx.In(`
+			SELECT address, first_name, last_name, avatar, gender, birthday, created_at FROM profile
+			WHERE address IN (?)
+		`, addr)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct IN clause: %w", err)
+	}
+
+	var p []*profileDTO
+
+	if err := sqlx.SelectContext(ctx, s.ext, &p, s.ext.Rebind(query), args...); err != nil {
+		return nil, fmt.Errorf("failed to query: %w", err)
+	}
+
+	out := make([]*entities.Profile, len(p))
+	for i, v := range p {
+		out[i] = &entities.Profile{
+			Address:   v.Address,
+			FirstName: v.FirstName,
+			LastName:  v.LastName,
+			Avatar:    v.Avatar,
+			Gender:    v.Gender,
+			Birthday:  v.Birthday,
+			CreatedAt: v.CreatedAt,
+		}
+	}
+
+	return out, nil
+}
+
+func (s pg) SetProfile(ctx context.Context, p *entities.Profile) error {
+	profile := profileDTO{
+		Address:   p.Address,
+		FirstName: p.FirstName,
+		LastName:  p.LastName,
+		Avatar:    p.Avatar,
+		Gender:    p.Gender,
+		Birthday:  p.Birthday,
+		CreatedAt: p.CreatedAt,
+	}
+
+	if _, err := sqlx.NamedExecContext(ctx, s.ext,
+		`
+			INSERT INTO profile(address, first_name, last_name, avatar, gender, birthday, created_at)
+			VALUES(:address, :first_name, :last_name, :avatar, :gender, :birthday, :created_at)
+			ON CONFLICT(address) DO UPDATE SET
+			first_name=excluded.first_name, last_name=excluded.last_name, avatar=excluded.avatar, gender=excluded.gender, birthday=excluded.birthday
+		`, profile,
+	); err != nil {
 		return fmt.Errorf("failed to exec: %w", err)
 	}
 
@@ -194,9 +263,47 @@ func (s pg) SetLike(ctx context.Context, postOwner string, postUUID string, weig
 	return nil
 }
 
+func (s pg) Follow(ctx context.Context, follower, followee string) error {
+	if _, err := s.ext.ExecContext(ctx,
+		`
+			INSERT INTO follow(follower, followee) VALUES($1, $2) ON CONFLICT DO NOTHING
+		`, follower, followee,
+	); err != nil {
+		return fmt.Errorf("failed to exec: %w", err)
+	}
+
+	return nil
+}
+
+func (s pg) Unfollow(ctx context.Context, follower, followee string) error {
+	if _, err := s.ext.ExecContext(ctx,
+		`
+			DELETE FROM follow WHERE follower=$1 AND followee=$2
+		`, follower, followee,
+	); err != nil {
+		return fmt.Errorf("failed to exec: %w", err)
+	}
+
+	return nil
+}
+
 // New creates new instance of pg.
 func New(db *sql.DB) storage.Storage {
 	return pg{
 		ext: sqlx.NewDb(db, "postgres"),
 	}
+}
+
+func stringsUnique(s []string) []string {
+	m := make(map[string]struct{}, len(s))
+	out := make([]string, 0, len(s))
+
+	for _, v := range s {
+		if _, ok := m[v]; !ok {
+			m[v] = struct{}{}
+			out = append(out, v)
+		}
+	}
+
+	return out
 }

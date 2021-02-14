@@ -13,6 +13,7 @@ import (
 	"github.com/Decentr-net/ariadne"
 	"github.com/Decentr-net/decentr/app"
 	"github.com/Decentr-net/decentr/x/community"
+	"github.com/Decentr-net/decentr/x/profile"
 
 	"github.com/Decentr-net/theseus/internal/consumer"
 	"github.com/Decentr-net/theseus/internal/entities"
@@ -70,30 +71,18 @@ func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Blo
 		err := b.s.OnHeight(ctx, block.Height, func(s service.Service) error {
 			for _, msg := range block.Messages() {
 				switch msg := msg.(type) {
+				case profile.MsgSetPublic:
+					return processMsgSetPublicProfile(ctx, s, block.Time, &msg)
 				case community.MsgCreatePost:
-
-					if err := s.CreatePost(ctx, &entities.Post{
-						UUID:         msg.UUID,
-						Owner:        msg.Owner.String(),
-						Title:        msg.Title,
-						Category:     msg.Category,
-						PreviewImage: msg.PreviewImage,
-						Text:         msg.Text,
-						CreatedAt:    block.Time,
-					}); err != nil {
-						return err
-					}
-
+					return processMsgCreatePost(ctx, s, block.Time, &msg)
 				case community.MsgDeletePost:
-					if err := s.DeletePost(ctx, msg.PostOwner.String(), msg.PostUUID, block.Time, msg.Owner.String()); err != nil {
-						return err
-					}
-
+					return processMsgDeletePost(ctx, s, block.Time, msg)
 				case community.MsgSetLike:
-					if err := s.SetLike(ctx, msg.PostOwner.String(), msg.PostUUID, msg.Weight, block.Time, msg.Owner.String()); err != nil {
-						return err
-					}
-
+					return processMsgSetLike(ctx, s, block.Time, msg)
+				case community.MsgFollow:
+					return processMsgFollow(ctx, s, msg)
+				case community.MsgUnfollow:
+					return processMsgUnfollow(ctx, s, msg)
 				default:
 					log.WithField("msg", fmt.Sprintf("%s/%s", msg.Route(), msg.Type())).Debug("skip message")
 				}
@@ -109,4 +98,44 @@ func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Blo
 
 		return err
 	}
+}
+
+func processMsgCreatePost(ctx context.Context, s service.Service, timestamp time.Time, msg *community.MsgCreatePost) error {
+	return s.CreatePost(ctx, &entities.Post{
+		UUID:         msg.UUID,
+		Owner:        msg.Owner.String(),
+		Title:        msg.Title,
+		Category:     msg.Category,
+		PreviewImage: msg.PreviewImage,
+		Text:         msg.Text,
+		CreatedAt:    timestamp,
+	})
+}
+
+func processMsgDeletePost(ctx context.Context, s service.Service, timestamp time.Time, msg community.MsgDeletePost) error {
+	return s.DeletePost(ctx, msg.PostOwner.String(), msg.PostUUID, timestamp, msg.Owner.String())
+}
+
+func processMsgSetLike(ctx context.Context, s service.Service, timestamp time.Time, msg community.MsgSetLike) error {
+	return s.SetLike(ctx, msg.PostOwner.String(), msg.PostUUID, msg.Weight, timestamp, msg.Owner.String())
+}
+
+func processMsgSetPublicProfile(ctx context.Context, s service.Service, timestamp time.Time, msg *profile.MsgSetPublic) error {
+	return s.SetProfile(ctx, &entities.Profile{
+		Address:   msg.Owner.String(),
+		FirstName: msg.Public.FirstName,
+		LastName:  msg.Public.LastName,
+		Avatar:    msg.Public.Avatar,
+		Gender:    string(msg.Public.Gender),
+		Birthday:  msg.Public.Birthday,
+		CreatedAt: timestamp,
+	})
+}
+
+func processMsgFollow(ctx context.Context, s service.Service, msg community.MsgFollow) error {
+	return s.Follow(ctx, msg.Owner.String(), msg.Whom.String())
+}
+
+func processMsgUnfollow(ctx context.Context, s service.Service, msg community.MsgUnfollow) error {
+	return s.Unfollow(ctx, msg.Owner.String(), msg.Whom.String())
 }
