@@ -35,15 +35,23 @@ func (s srv) OnHeight(ctx context.Context, height uint64, f func(s service.Servi
 func (s srv) GetHeight(ctx context.Context) (uint64, error) {
 	h, err := s.s.GetHeight(ctx)
 	if err != nil {
-		return 0, fmt.Errorf("failed to get height from s: %w", err)
+		return 0, fmt.Errorf("failed to get height from storage: %w", err)
 	}
 
 	return h, nil
 }
 
+func (s srv) SetProfile(ctx context.Context, p *entities.Profile) error {
+	if err := s.s.SetProfile(ctx, p); err != nil {
+		return fmt.Errorf("failed to set profile on storage side: %w", err)
+	}
+
+	return nil
+}
+
 func (s srv) CreatePost(ctx context.Context, p *entities.Post) error {
 	if err := s.s.CreatePost(ctx, p); err != nil {
-		return fmt.Errorf("failed to create post on s side: %w", err)
+		return fmt.Errorf("failed to create post on storage side: %w", err)
 	}
 
 	return nil
@@ -51,7 +59,7 @@ func (s srv) CreatePost(ctx context.Context, p *entities.Post) error {
 
 func (s srv) DeletePost(ctx context.Context, postOwner, postUUID string, timestamp time.Time, deletedByUUID string) error {
 	if err := s.s.DeletePost(ctx, postOwner, postUUID, timestamp, deletedByUUID); err != nil {
-		return fmt.Errorf("failed to delete post on s side: %w", err)
+		return fmt.Errorf("failed to delete post on storage side: %w", err)
 	}
 
 	return nil
@@ -59,7 +67,23 @@ func (s srv) DeletePost(ctx context.Context, postOwner, postUUID string, timesta
 
 func (s srv) SetLike(ctx context.Context, postOwner, postUUID string, weight types.LikeWeight, timestamp time.Time, likedBy string) error {
 	if err := s.s.SetLike(ctx, postOwner, postUUID, weight, timestamp, likedBy); err != nil {
-		return fmt.Errorf("failed to set like on s side: %w", err)
+		return fmt.Errorf("failed to set like on storage side: %w", err)
+	}
+
+	return nil
+}
+
+func (s srv) Follow(ctx context.Context, follower, followee string) error {
+	if err := s.s.Follow(ctx, follower, followee); err != nil {
+		return fmt.Errorf("failed to follow on storage side: %w", err)
+	}
+
+	return nil
+}
+
+func (s srv) Unfollow(ctx context.Context, follower, followee string) error {
+	if err := s.s.Unfollow(ctx, follower, followee); err != nil {
+		return fmt.Errorf("failed to follow on storage side: %w", err)
 	}
 
 	return nil

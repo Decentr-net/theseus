@@ -66,6 +66,63 @@ func (mr *MockStorageMockRecorder) GetHeight(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHeight", reflect.TypeOf((*MockStorage)(nil).GetHeight), ctx)
 }
 
+// GetProfiles mocks base method
+func (m *MockStorage) GetProfiles(ctx context.Context, addr []string) ([]*entities.Profile, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProfiles", ctx, addr)
+	ret0, _ := ret[0].([]*entities.Profile)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetProfiles indicates an expected call of GetProfiles
+func (mr *MockStorageMockRecorder) GetProfiles(ctx, addr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProfiles", reflect.TypeOf((*MockStorage)(nil).GetProfiles), ctx, addr)
+}
+
+// SetProfile mocks base method
+func (m *MockStorage) SetProfile(ctx context.Context, p *entities.Profile) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetProfile", ctx, p)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetProfile indicates an expected call of SetProfile
+func (mr *MockStorageMockRecorder) SetProfile(ctx, p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProfile", reflect.TypeOf((*MockStorage)(nil).SetProfile), ctx, p)
+}
+
+// Follow mocks base method
+func (m *MockStorage) Follow(ctx context.Context, follower, followee string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Follow", ctx, follower, followee)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Follow indicates an expected call of Follow
+func (mr *MockStorageMockRecorder) Follow(ctx, follower, followee interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Follow", reflect.TypeOf((*MockStorage)(nil).Follow), ctx, follower, followee)
+}
+
+// Unfollow mocks base method
+func (m *MockStorage) Unfollow(ctx context.Context, follower, followee string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Unfollow", ctx, follower, followee)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Unfollow indicates an expected call of Unfollow
+func (mr *MockStorageMockRecorder) Unfollow(ctx, follower, followee interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unfollow", reflect.TypeOf((*MockStorage)(nil).Unfollow), ctx, follower, followee)
+}
+
 // CreatePost mocks base method
 func (m *MockStorage) CreatePost(ctx context.Context, p *entities.Post) error {
 	m.ctrl.T.Helper()

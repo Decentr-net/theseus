@@ -182,6 +182,58 @@ func TestPg_WithLockedHeight(t *testing.T) {
 	mu.Lock() // do not finish until second routine will finish
 }
 
+func TestPg_SetProfile(t *testing.T) {
+	defer cleanup(t)
+
+	expected := entities.Profile{
+		Address:   "address",
+		FirstName: "first_name",
+		LastName:  "last_name",
+		Avatar:    "avatar",
+		Gender:    "male",
+		Birthday:  "01.02.2020",
+		CreatedAt: time.Now().UTC(),
+	}
+
+	require.NoError(t, s.SetProfile(ctx, &expected))
+	p, err := s.GetProfiles(ctx, []string{expected.Address})
+	require.NoError(t, err)
+	require.Len(t, p, 1)
+	require.Equal(t, expected.Address, p[0].Address)
+	require.Equal(t, expected.FirstName, p[0].FirstName)
+	require.Equal(t, expected.LastName, p[0].LastName)
+	require.Equal(t, expected.Avatar, p[0].Avatar)
+	require.Equal(t, expected.Gender, p[0].Gender)
+	require.Equal(t, expected.Birthday, p[0].Birthday)
+	require.Equal(t, expected.CreatedAt.UTC().Unix(), p[0].CreatedAt.Unix())
+}
+
+func TestPg_GetProfiles(t *testing.T) {
+	defer cleanup(t)
+
+	p := entities.Profile{
+		Address:   "address",
+		FirstName: "first_name",
+		LastName:  "last_name",
+		Avatar:    "avatar",
+		Gender:    "male",
+		Birthday:  "01.02.2020",
+		CreatedAt: time.Now().UTC(),
+	}
+
+	require.NoError(t, s.SetProfile(ctx, &p))
+
+	p.Address = "address_2"
+	require.NoError(t, s.SetProfile(ctx, &p))
+
+	p.Address = "address_3"
+	require.NoError(t, s.SetProfile(ctx, &p))
+
+	pp, err := s.GetProfiles(ctx, []string{"address", "address_2", "address_4"})
+	require.NoError(t, err)
+	require.Len(t, pp, 2)
+}
+
 func TestPg_CreatePost(t *testing.T) {
 	defer cleanup(t)
 
@@ -267,4 +319,36 @@ func TestPg_SetLike(t *testing.T) {
 
 	require.NoError(t, s.CreatePost(ctx, &p))
 	require.NoError(t, s.SetLike(ctx, p.Owner, p.UUID, 1, p.CreatedAt, "liker"))
+}
+
+func TestPg_Follow(t *testing.T) {
+	defer cleanup(t)
+
+	require.NoError(t, s.Follow(ctx, "1", "2"))
+
+	var f struct {
+		Follower string `db:"follower"`
+		Followee string `db:"followee"`
+	}
+
+	require.NoError(t, sqlx.NewDb(db, "postgres").GetContext(ctx, &f, `SELECT * FROM follow`))
+
+	require.Equal(t, "1", f.Follower)
+	require.Equal(t, "2", f.Followee)
+}
+
+func TestPg_Unfollow(t *testing.T) {
+	defer cleanup(t)
+
+	require.NoError(t, s.Follow(ctx, "1", "2"))
+	require.NoError(t, s.Unfollow(ctx, "1", "2"))
+
+	var f struct {
+		Follower string `db:"follower"`
+		Followee string `db:"followee"`
+	}
+
+	err := sqlx.NewDb(db, "postgres").GetContext(ctx, &f, `SELECT * FROM follow`)
+	require.Error(t, err)
+	require.True(t, errors.Is(err, sql.ErrNoRows))
 }

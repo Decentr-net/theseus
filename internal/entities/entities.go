@@ -17,3 +17,14 @@ type Post struct {
 	Text         string
 	CreatedAt    time.Time
 }
+
+// Profile ...
+type Profile struct {
+	Address   string
+	FirstName string
+	LastName  string
+	Avatar    string
+	Gender    string
+	Birthday  string
+	CreatedAt time.Time
+}
