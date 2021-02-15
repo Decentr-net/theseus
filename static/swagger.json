@@ -15,8 +15,179 @@
     "version": "0.0.1"
   },
   "basePath": "/v1",
-  "paths": {},
+  "paths": {
+    "/posts": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Community"
+        ],
+        "summary": "Return posts with additional meta information.",
+        "operationId": "ListPosts",
+        "parameters": [
+          {
+            "maximum": 9,
+            "minimum": 1,
+            "type": "integer",
+            "format": "uint8",
+            "example": "4",
+            "x-go-name": "Category",
+            "description": "A category filter",
+            "name": "category",
+            "in": "query"
+          },
+          {
+            "enum": [
+              "created_at",
+              "likes"
+            ],
+            "type": "string",
+            "default": "created_at",
+            "example": "likes",
+            "x-go-name": "SortBy",
+            "description": "A field for sorting",
+            "name": "sortBy",
+            "in": "query"
+          },
+          {
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "type": "string",
+            "default": "desc",
+            "example": "asc",
+            "x-go-name": "OrderBy",
+            "description": "A type of order",
+            "name": "orderBy",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "example": "decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz",
+            "x-go-name": "Owner",
+            "description": "An owner filter",
+            "name": "owner",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "example": "decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz",
+            "x-go-name": "LikedBy",
+            "description": "A `liked by` filter\nIf specified only liked by specified user posts will be returned",
+            "name": "likedBy",
+            "in": "query"
+          },
+          {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer",
+            "format": "uint16",
+            "default": "20",
+            "x-go-name": "Limit",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "example": "decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz/df870e39-6fcb-11eb-9461-0242ac11000b",
+            "x-go-name": "After",
+            "description": "Specifies post after which posts will be sought\nFull form ID(owner/uuid) should be specified",
+            "name": "after",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "format": "uint64",
+            "x-go-name": "From",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "format": "uint64",
+            "x-go-name": "To",
+            "name": "to",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Posts",
+            "schema": {
+              "$ref": "#/definitions/ListPostsResponse"
+            }
+          },
+          "400": {
+            "description": "bad request",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "500": {
+            "description": "internal server error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/posts/{owner}/{uuid}": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Community"
+        ],
+        "summary": "Get post by owner and uuid.",
+        "operationId": "GetPost",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "owner",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "uuid",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Posts",
+            "schema": {
+              "$ref": "#/definitions/ListPostsResponse"
+            }
+          },
+          "400": {
+            "description": "bad request",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "500": {
+            "description": "internal server error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    }
+  },
   "definitions": {
+    "Category": {
+      "type": "integer",
+      "format": "uint8",
+      "x-go-package": "github.com/Decentr-net/decentr/x/community/types"
+    },
     "Error": {
       "type": "object",
       "title": "Error ...",
@@ -25,6 +196,132 @@
           "type": "string",
           "x-go-name": "Error"
         }
+      },
+      "x-go-package": "github.com/Decentr-net/theseus/internal/server"
+    },
+    "ListPostsResponse": {
+      "type": "object",
+      "title": "ListPostsResponse ...",
+      "properties": {
+        "posts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Post"
+          },
+          "x-go-name": "Posts"
+        },
+        "profiles": {
+          "description": "Profiles dictionary where key is an address and value is a profile.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/Profile"
+          },
+          "x-go-name": "Profiles"
+        },
+        "stats": {
+          "description": "Posts' statistics dictionary where key is a full form ID (owner/uuid) and value is statistics",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/Stats"
+          },
+          "x-go-name": "Stats"
+        }
+      },
+      "x-go-package": "github.com/Decentr-net/theseus/internal/server"
+    },
+    "Post": {
+      "type": "object",
+      "title": "Post ...",
+      "properties": {
+        "category": {
+          "$ref": "#/definitions/Category"
+        },
+        "created_at": {
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "CreatedAt"
+        },
+        "dislikes": {
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "Dislikes"
+        },
+        "likes": {
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "Likes"
+        },
+        "owner": {
+          "type": "string",
+          "x-go-name": "Owner"
+        },
+        "pdv": {
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "PDV"
+        },
+        "preview_image": {
+          "type": "string",
+          "x-go-name": "PreviewImage"
+        },
+        "text": {
+          "type": "string",
+          "x-go-name": "Text"
+        },
+        "title": {
+          "type": "string",
+          "x-go-name": "Title"
+        },
+        "uuid": {
+          "type": "string",
+          "x-go-name": "UUID"
+        }
+      },
+      "x-go-package": "github.com/Decentr-net/theseus/internal/server"
+    },
+    "Profile": {
+      "type": "object",
+      "title": "Profile ...",
+      "properties": {
+        "address": {
+          "type": "string",
+          "x-go-name": "Address"
+        },
+        "avatar": {
+          "type": "string",
+          "x-go-name": "Avatar"
+        },
+        "birthday": {
+          "type": "string",
+          "x-go-name": "Birthday"
+        },
+        "created_at": {
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "CreatedAt"
+        },
+        "first_name": {
+          "type": "string",
+          "x-go-name": "FirstName"
+        },
+        "gender": {
+          "type": "string",
+          "x-go-name": "Gender"
+        },
+        "last_name": {
+          "type": "string",
+          "x-go-name": "LastName"
+        }
+      },
+      "x-go-package": "github.com/Decentr-net/theseus/internal/server"
+    },
+    "Stats": {
+      "description": "Key is RFC3999 date, value is uPDV",
+      "type": "object",
+      "title": "Stats ...",
+      "additionalProperties": {
+        "type": "integer",
+        "format": "uint64"
       },
       "x-go-package": "github.com/Decentr-net/theseus/internal/server"
     }

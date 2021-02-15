@@ -89,6 +89,22 @@ func (s srv) Unfollow(ctx context.Context, follower, followee string) error {
 	return nil
 }
 
+func (s srv) GetProfiles(ctx context.Context, addr []string) ([]entities.Profile, error) {
+	panic("implement me")
+}
+
+func (s srv) ListPosts(ctx context.Context, filter service.ListPostsParams) ([]entities.CalculatedPost, error) {
+	panic("implement me")
+}
+
+func (s srv) GetPost(ctx context.Context, id service.PostID) (entities.CalculatedPost, error) {
+	panic("implement me")
+}
+
+func (s srv) GetStats(ctx context.Context, id []service.PostID) (map[service.PostID]entities.Stats, error) {
+	panic("implement me")
+}
+
 // New creates new instance of service.
 func New(s storage.Storage) service.Service {
 	return srv{

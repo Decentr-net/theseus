@@ -95,6 +95,7 @@ issues:
         - maligned
         - gochecknoglobals
         - lll
+        - govet
         - noctx
         - goerr113
 

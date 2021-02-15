@@ -18,6 +18,14 @@ type Post struct {
 	CreatedAt    time.Time
 }
 
+// CalculatedPost ...
+type CalculatedPost struct {
+	Post
+	Likes    uint32
+	Dislikes uint32
+	PDV      uint64
+}
+
 // Profile ...
 type Profile struct {
 	Address   string
@@ -28,3 +36,6 @@ type Profile struct {
 	Birthday  string
 	CreatedAt time.Time
 }
+
+// Stats is map where key is date and value is uPDV count.
+type Stats map[time.Time]uint64
