@@ -1,11 +1,65 @@
 package server
 
-var (
-//	errInvalidRequest = errors.New("invalid request")
+import (
+	community "github.com/Decentr-net/decentr/x/community/types"
 )
+
+const rfc3339date = "2006-01-02"
+
+const (
+	createdAtSort = "created_at"
+	likesSort     = "likes"
+)
+
+const (
+	ascendingOrder  = "asc"
+	descendingOrder = "desc"
+)
+
+const maxLimit = 100
+const defaultLimit = 20
 
 // Error ...
 // swagger:model
 type Error struct {
 	Error string `json:"error"`
 }
+
+// ListPostsResponse ...
+// swagger:model
+type ListPostsResponse struct {
+	Posts []Post `json:"posts"`
+	// Profiles dictionary where key is an address and value is a profile.
+	Profiles map[string]Profile `json:"profiles"`
+	// Posts' statistics dictionary where key is a full form ID (owner/uuid) and value is statistics
+	Stats map[string]Stats `json:"stats"`
+}
+
+// Post ...
+type Post struct {
+	UUID         string             `json:"uuid"`
+	Owner        string             `json:"owner"`
+	Title        string             `json:"title"`
+	Category     community.Category `json:"category"`
+	PreviewImage string             `json:"preview_image"`
+	Text         string             `json:"text"`
+	Likes        uint32             `json:"likes"`
+	Dislikes     uint32             `json:"dislikes"`
+	PDV          uint64             `json:"pdv"`
+	CreatedAt    uint64             `json:"created_at"`
+}
+
+// Profile ...
+type Profile struct {
+	Address   string `json:"address"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Avatar    string `json:"avatar"`
+	Gender    string `json:"gender"`
+	Birthday  string `json:"birthday"`
+	CreatedAt uint64 `json:"created_at"`
+}
+
+// Stats ...
+// Key is RFC3999 date, value is uPDV.
+type Stats map[string]uint64

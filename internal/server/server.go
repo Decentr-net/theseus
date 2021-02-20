@@ -51,7 +51,10 @@ func SetupRouter(s service.Service, r chi.Router) {
 		s: s,
 	}
 
-	fmt.Print(srv) // fix lint for initial commit
+	r.Route("/v1", func(r chi.Router) {
+		r.Get("/posts", srv.listPosts)
+		r.Get("/posts/{owner}/{uuid}", srv.getPost)
+	})
 }
 
 func getLogger(ctx context.Context) logrus.FieldLogger {

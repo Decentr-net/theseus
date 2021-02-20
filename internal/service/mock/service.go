@@ -66,6 +66,21 @@ func (mr *MockServiceMockRecorder) GetHeight(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHeight", reflect.TypeOf((*MockService)(nil).GetHeight), ctx)
 }
 
+// GetProfiles mocks base method
+func (m *MockService) GetProfiles(ctx context.Context, addr []string) ([]entities.Profile, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProfiles", ctx, addr)
+	ret0, _ := ret[0].([]entities.Profile)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetProfiles indicates an expected call of GetProfiles
+func (mr *MockServiceMockRecorder) GetProfiles(ctx, addr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProfiles", reflect.TypeOf((*MockService)(nil).GetProfiles), ctx, addr)
+}
+
 // SetProfile mocks base method
 func (m *MockService) SetProfile(ctx context.Context, p *entities.Profile) error {
 	m.ctrl.T.Helper()
@@ -108,6 +123,36 @@ func (mr *MockServiceMockRecorder) Unfollow(ctx, follower, followee interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unfollow", reflect.TypeOf((*MockService)(nil).Unfollow), ctx, follower, followee)
 }
 
+// ListPosts mocks base method
+func (m *MockService) ListPosts(ctx context.Context, filter service.ListPostsParams) ([]entities.CalculatedPost, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListPosts", ctx, filter)
+	ret0, _ := ret[0].([]entities.CalculatedPost)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListPosts indicates an expected call of ListPosts
+func (mr *MockServiceMockRecorder) ListPosts(ctx, filter interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPosts", reflect.TypeOf((*MockService)(nil).ListPosts), ctx, filter)
+}
+
+// GetPost mocks base method
+func (m *MockService) GetPost(ctx context.Context, id service.PostID) (entities.CalculatedPost, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPost", ctx, id)
+	ret0, _ := ret[0].(entities.CalculatedPost)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPost indicates an expected call of GetPost
+func (mr *MockServiceMockRecorder) GetPost(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPost", reflect.TypeOf((*MockService)(nil).GetPost), ctx, id)
+}
+
 // CreatePost mocks base method
 func (m *MockService) CreatePost(ctx context.Context, p *entities.Post) error {
 	m.ctrl.T.Helper()
@@ -148,4 +193,19 @@ func (m *MockService) SetLike(ctx context.Context, postOwner, postUUID string, w
 func (mr *MockServiceMockRecorder) SetLike(ctx, postOwner, postUUID, weight, timestamp, likedBy interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLike", reflect.TypeOf((*MockService)(nil).SetLike), ctx, postOwner, postUUID, weight, timestamp, likedBy)
+}
+
+// GetStats mocks base method
+func (m *MockService) GetStats(ctx context.Context, id []service.PostID) (map[service.PostID]entities.Stats, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStats", ctx, id)
+	ret0, _ := ret[0].(map[service.PostID]entities.Stats)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetStats indicates an expected call of GetStats
+func (mr *MockServiceMockRecorder) GetStats(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStats", reflect.TypeOf((*MockService)(nil).GetStats), ctx, id)
 }
