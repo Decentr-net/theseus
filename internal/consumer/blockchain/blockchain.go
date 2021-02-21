@@ -16,8 +16,7 @@ import (
 	"github.com/Decentr-net/decentr/x/profile"
 
 	"github.com/Decentr-net/theseus/internal/consumer"
-	"github.com/Decentr-net/theseus/internal/entities"
-	"github.com/Decentr-net/theseus/internal/service"
+	"github.com/Decentr-net/theseus/internal/storage"
 )
 
 // nolint:gochecknoinits
@@ -31,14 +30,14 @@ var log = logrus.WithField("package", "blockchain")
 
 type blockchain struct {
 	f ariadne.Fetcher
-	s service.Service
+	s storage.Storage
 
 	retryInterval          time.Duration
 	retryLastBlockInterval time.Duration
 }
 
 // New returns new blockchain instance.
-func New(f ariadne.Fetcher, s service.Service, retryInterval, retryLastBlockInterval time.Duration) consumer.Consumer {
+func New(f ariadne.Fetcher, s storage.Storage, retryInterval, retryLastBlockInterval time.Duration) consumer.Consumer {
 	return blockchain{
 		f: f,
 		s: s,
@@ -68,7 +67,7 @@ func (b blockchain) Run(ctx context.Context) error {
 
 func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Block) error {
 	return func(block ariadne.Block) error {
-		err := b.s.OnHeight(ctx, block.Height, func(s service.Service) error {
+		err := b.s.WithLockedHeight(ctx, block.Height, func(s storage.Storage) error {
 			for _, msg := range block.Messages() {
 				switch msg := msg.(type) {
 				case profile.MsgSetPublic:
@@ -92,7 +91,7 @@ func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Blo
 		})
 
 		// A block is processed, we shouldn't retry processing
-		if errors.Is(err, service.ErrRequestedHeightIsTooLow) {
+		if errors.Is(err, storage.ErrRequestedHeightIsTooLow) {
 			return nil
 		}
 
@@ -100,8 +99,8 @@ func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Blo
 	}
 }
 
-func processMsgCreatePost(ctx context.Context, s service.Service, timestamp time.Time, msg *community.MsgCreatePost) error {
-	return s.CreatePost(ctx, &entities.Post{
+func processMsgCreatePost(ctx context.Context, s storage.Storage, timestamp time.Time, msg *community.MsgCreatePost) error {
+	return s.CreatePost(ctx, &storage.CreatePostParams{
 		UUID:         msg.UUID,
 		Owner:        msg.Owner.String(),
 		Title:        msg.Title,
@@ -112,16 +111,16 @@ func processMsgCreatePost(ctx context.Context, s service.Service, timestamp time
 	})
 }
 
-func processMsgDeletePost(ctx context.Context, s service.Service, timestamp time.Time, msg community.MsgDeletePost) error {
-	return s.DeletePost(ctx, msg.PostOwner.String(), msg.PostUUID, timestamp, msg.Owner.String())
+func processMsgDeletePost(ctx context.Context, s storage.Storage, timestamp time.Time, msg community.MsgDeletePost) error {
+	return s.DeletePost(ctx, storage.PostID{Owner: msg.PostOwner.String(), UUID: msg.PostUUID}, timestamp, msg.Owner.String())
 }
 
-func processMsgSetLike(ctx context.Context, s service.Service, timestamp time.Time, msg community.MsgSetLike) error {
-	return s.SetLike(ctx, msg.PostOwner.String(), msg.PostUUID, msg.Weight, timestamp, msg.Owner.String())
+func processMsgSetLike(ctx context.Context, s storage.Storage, timestamp time.Time, msg community.MsgSetLike) error {
+	return s.SetLike(ctx, storage.PostID{Owner: msg.PostOwner.String(), UUID: msg.PostUUID}, msg.Weight, timestamp, msg.Owner.String())
 }
 
-func processMsgSetPublicProfile(ctx context.Context, s service.Service, timestamp time.Time, msg *profile.MsgSetPublic) error {
-	return s.SetProfile(ctx, &entities.Profile{
+func processMsgSetPublicProfile(ctx context.Context, s storage.Storage, timestamp time.Time, msg *profile.MsgSetPublic) error {
+	return s.SetProfile(ctx, &storage.Profile{
 		Address:   msg.Owner.String(),
 		FirstName: msg.Public.FirstName,
 		LastName:  msg.Public.LastName,
@@ -132,10 +131,10 @@ func processMsgSetPublicProfile(ctx context.Context, s service.Service, timestam
 	})
 }
 
-func processMsgFollow(ctx context.Context, s service.Service, msg community.MsgFollow) error {
+func processMsgFollow(ctx context.Context, s storage.Storage, msg community.MsgFollow) error {
 	return s.Follow(ctx, msg.Owner.String(), msg.Whom.String())
 }
 
-func processMsgUnfollow(ctx context.Context, s service.Service, msg community.MsgUnfollow) error {
+func processMsgUnfollow(ctx context.Context, s storage.Storage, msg community.MsgUnfollow) error {
 	return s.Unfollow(ctx, msg.Owner.String(), msg.Whom.String())
 }

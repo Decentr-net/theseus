@@ -5,7 +5,7 @@ import (
 	"context"
 )
 
-//go:generate mockgen -destination=./mock/consumer_mock.go -package=consumer -source=consumer.go
+//go:generate mockgen -destination=./mock/consumer.go -package=consumer -source=consumer.go
 
 // Consumer consumes blocks from decentr blockchain.
 type Consumer interface {

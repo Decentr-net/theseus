@@ -28,8 +28,7 @@ import (
 	"github.com/Decentr-net/theseus/internal/consumer/blockchain"
 	"github.com/Decentr-net/theseus/internal/health"
 	"github.com/Decentr-net/theseus/internal/server"
-	"github.com/Decentr-net/theseus/internal/service"
-	serviceimpl "github.com/Decentr-net/theseus/internal/service/impl"
+	"github.com/Decentr-net/theseus/internal/storage"
 	"github.com/Decentr-net/theseus/internal/storage/postgres"
 )
 
@@ -96,7 +95,7 @@ func main() {
 
 	db := mustGetDB()
 
-	s := serviceimpl.New(postgres.New(db))
+	s := postgres.New(db)
 
 	server.SetupRouter(s, r)
 	health.SetupRouter(r,
@@ -182,7 +181,7 @@ func mustGetDB() *sql.DB {
 	return db
 }
 
-func mustGetConsumer(s service.Service) consumer.Consumer {
+func mustGetConsumer(s storage.Storage) consumer.Consumer {
 	fetcher, err := ariadne.New(opts.BlockchainNode, decentr.MakeCodec(), opts.BlockchainTimeout)
 	if err != nil {
 		logrus.WithError(err).Fatal("failed to create blocks fetcher")

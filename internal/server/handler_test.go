@@ -13,9 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/Decentr-net/theseus/internal/entities"
-	"github.com/Decentr-net/theseus/internal/service"
-	"github.com/Decentr-net/theseus/internal/service/mock"
+	"github.com/Decentr-net/theseus/internal/storage"
+	"github.com/Decentr-net/theseus/internal/storage/mock"
 )
 
 func Test_listPosts(t *testing.T) {
@@ -28,53 +27,49 @@ func Test_listPosts(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	srv := mock.NewMockService(ctrl)
+	s := mock.NewMockStorage(ctrl)
 
-	srv.EXPECT().ListPosts(gomock.Any(), gomock.Any()).Do(func(_ context.Context, p service.ListPostsParams) {
-		assert.Equal(t, service.LikesSortType, p.SortBy)
-		assert.Equal(t, service.AscendingOrder, p.OrderBy)
+	s.EXPECT().ListPosts(gomock.Any(), gomock.Any()).Do(func(_ context.Context, p *storage.ListPostsParams) {
+		assert.Equal(t, storage.LikesSortType, p.SortBy)
+		assert.Equal(t, storage.AscendingOrder, p.OrderBy)
 		assert.EqualValues(t, 1, *p.Category)
 		assert.Equal(t, "addr", *p.Owner)
 		assert.Equal(t, "1234", *p.LikedBy)
 		assert.EqualValues(t, 100, p.Limit)
-		assert.Equal(t, service.PostID{
+		assert.Equal(t, storage.PostID{
 			Owner: "1234",
 			UUID:  "4321",
 		}, *p.After)
 		assert.EqualValues(t, 1, *p.From)
 		assert.EqualValues(t, 1000, *p.To)
-	}).Return([]entities.CalculatedPost{
+	}).Return([]*storage.Post{
 		{
-			Post: entities.Post{
-				UUID:         "uuid",
-				Owner:        "owner",
-				Title:        "title",
-				Category:     1,
-				PreviewImage: "preview",
-				Text:         "text",
-				CreatedAt:    timestamp,
-			},
-			Likes:    1,
-			Dislikes: 2,
-			PDV:      3,
+			UUID:         "uuid",
+			Owner:        "owner",
+			Title:        "title",
+			Category:     1,
+			PreviewImage: "preview",
+			Text:         "text",
+			CreatedAt:    timestamp,
+			Likes:        1,
+			Dislikes:     2,
+			PDV:          3,
 		},
 		{
-			Post: entities.Post{
-				UUID:         "uuid2",
-				Owner:        "owner2",
-				Title:        "title2",
-				Category:     2,
-				PreviewImage: "preview2",
-				Text:         "text2",
-				CreatedAt:    timestamp,
-			},
-			Likes:    1,
-			Dislikes: 2,
-			PDV:      3,
+			UUID:         "uuid2",
+			Owner:        "owner2",
+			Title:        "title2",
+			Category:     2,
+			PreviewImage: "preview2",
+			Text:         "text2",
+			CreatedAt:    timestamp,
+			Likes:        1,
+			Dislikes:     2,
+			PDV:          3,
 		},
 	}, nil)
 
-	srv.EXPECT().GetProfiles(gomock.Any(), []string{"owner", "owner2"}).Return([]entities.Profile{
+	s.EXPECT().GetProfiles(gomock.Any(), []string{"owner", "owner2"}).Return([]*storage.Profile{
 		{
 			Address:   "owner",
 			FirstName: "f",
@@ -94,16 +89,16 @@ func Test_listPosts(t *testing.T) {
 			CreatedAt: timestamp,
 		},
 	}, nil)
-	srv.EXPECT().GetStats(gomock.Any(), []service.PostID{
+	s.EXPECT().GetStats(gomock.Any(), []storage.PostID{
 		{"owner", "uuid"}, {"owner2", "uuid2"},
-	}).Return(map[service.PostID]entities.Stats{
+	}).Return(map[storage.PostID]storage.Stats{
 		{"owner", "uuid"}:   {timestamp: 1},
 		{"owner2", "uuid2"}: {timestamp: 2},
 	}, nil)
 
 	router := chi.NewRouter()
-	s := server{s: srv}
-	router.Get("/v1/posts", s.listPosts)
+	srv := server{s: s}
+	router.Get("/v1/posts", srv.listPosts)
 
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, r)
@@ -177,23 +172,22 @@ func Test_getPost(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	srv := mock.NewMockService(ctrl)
+	srv := mock.NewMockStorage(ctrl)
 
-	srv.EXPECT().GetPost(gomock.Any(), service.PostID{
+	srv.EXPECT().GetPost(gomock.Any(), storage.PostID{
 		Owner: "owner",
 		UUID:  "uuid",
-	}).Return(entities.CalculatedPost{
-		Post: entities.Post{UUID: "uuid",
-			Owner:        "owner",
-			Title:        "title",
-			Category:     1,
-			PreviewImage: "preview",
-			Text:         "text",
-			CreatedAt:    timestamp,
-		},
-		Likes:    1,
-		Dislikes: 2,
-		PDV:      3,
+	}).Return(&storage.Post{
+		UUID:         "uuid",
+		Owner:        "owner",
+		Title:        "title",
+		Category:     1,
+		PreviewImage: "preview",
+		Text:         "text",
+		CreatedAt:    timestamp,
+		Likes:        1,
+		Dislikes:     2,
+		PDV:          3,
 	}, nil)
 
 	router := chi.NewRouter()

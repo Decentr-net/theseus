@@ -12,8 +12,7 @@ import (
 
 	community "github.com/Decentr-net/decentr/x/community/types"
 
-	"github.com/Decentr-net/theseus/internal/entities"
-	"github.com/Decentr-net/theseus/internal/service"
+	"github.com/Decentr-net/theseus/internal/storage"
 )
 
 var errInvalidRequest = errors.New("invalid request")
@@ -159,7 +158,7 @@ func (s server) getPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p, err := s.s.GetPost(r.Context(), service.PostID{Owner: owner, UUID: uuid})
+	p, err := s.s.GetPost(r.Context(), storage.PostID{Owner: owner, UUID: uuid})
 	if err != nil {
 		writeInternalError(getLogger(r.Context()).WithError(err), w, "failed to get post")
 		return
@@ -180,42 +179,40 @@ func (s server) getPost(w http.ResponseWriter, r *http.Request) {
 }
 
 // nolint: gocyclo
-func extractListParamsFromQuery(q url.Values) (service.ListPostsParams, error) {
-	out := service.ListPostsParams{
-		SortBy:  service.CreatedAtSortType,
-		OrderBy: service.DescendingOrder,
+func extractListParamsFromQuery(q url.Values) (*storage.ListPostsParams, error) {
+	out := storage.ListPostsParams{
+		SortBy:  storage.CreatedAtSortType,
+		OrderBy: storage.DescendingOrder,
 		Limit:   defaultLimit,
 	}
 
-	switch s := q.Get("sort_by"); s {
-	case createdAtSort:
-		out.SortBy = service.CreatedAtSortType
-	case likesSort:
-		out.SortBy = service.LikesSortType
+	sortBy := storage.SortType(strings.ToLower(q.Get("sort_by")))
+	switch sortBy {
+	case storage.CreatedAtSortType, storage.LikesSortType:
+		out.SortBy = sortBy
 	case "":
 	default:
-		return service.ListPostsParams{}, fmt.Errorf("%w: invalid sort_by", errInvalidRequest)
+		return nil, fmt.Errorf("%w: invalid sort_by", errInvalidRequest)
 	}
 
-	switch s := q.Get("order_by"); s {
-	case ascendingOrder:
-		out.OrderBy = service.AscendingOrder
-	case descendingOrder:
-		out.OrderBy = service.DescendingOrder
+	orderBy := storage.OrderType(strings.ToLower(q.Get("order_by")))
+	switch orderBy {
+	case storage.AscendingOrder, storage.DescendingOrder:
+		out.OrderBy = orderBy
 	case "":
 	default:
-		return service.ListPostsParams{}, fmt.Errorf("%w: invalid order_by", errInvalidRequest)
+		return nil, fmt.Errorf("%w: invalid order_by", errInvalidRequest)
 	}
 
 	if s := q.Get("category"); s != "" {
 		v, err := strconv.ParseUint(s, 10, 64)
 		if err != nil {
-			return service.ListPostsParams{}, fmt.Errorf("%w: failed to parse category", errInvalidRequest)
+			return nil, fmt.Errorf("%w: failed to parse category", errInvalidRequest)
 		}
 
 		c := community.Category(v)
 		if c == community.UndefinedCategory || c > community.SportsCategory {
-			return service.ListPostsParams{}, fmt.Errorf("%w: invalid category value", errInvalidRequest)
+			return nil, fmt.Errorf("%w: invalid category value", errInvalidRequest)
 		}
 		out.Category = &c
 	}
@@ -223,11 +220,11 @@ func extractListParamsFromQuery(q url.Values) (service.ListPostsParams, error) {
 	if s := q.Get("limit"); s != "" {
 		v, err := strconv.ParseUint(s, 10, 64)
 		if err != nil {
-			return service.ListPostsParams{}, fmt.Errorf("%w: failed to parse limit", errInvalidRequest)
+			return nil, fmt.Errorf("%w: failed to parse limit", errInvalidRequest)
 		}
 
 		if v > maxLimit {
-			return service.ListPostsParams{}, fmt.Errorf("%w: limit is too big", errInvalidRequest)
+			return nil, fmt.Errorf("%w: limit is too big", errInvalidRequest)
 		}
 
 		out.Limit = uint16(v)
@@ -245,10 +242,10 @@ func extractListParamsFromQuery(q url.Values) (service.ListPostsParams, error) {
 		p := strings.Split(s, "/")
 
 		if len(p) != 2 {
-			return service.ListPostsParams{}, fmt.Errorf("%w: invalid post id", errInvalidRequest)
+			return nil, fmt.Errorf("%w: invalid post id", errInvalidRequest)
 		}
 
-		out.After = &service.PostID{
+		out.After = &storage.PostID{
 			Owner: p[0],
 			UUID:  p[1],
 		}
@@ -257,7 +254,7 @@ func extractListParamsFromQuery(q url.Values) (service.ListPostsParams, error) {
 	if s := q.Get("from"); s != "" {
 		v, err := strconv.ParseUint(s, 10, 64)
 		if err != nil {
-			return service.ListPostsParams{}, fmt.Errorf("%w: failed to parse from", errInvalidRequest)
+			return nil, fmt.Errorf("%w: failed to parse from", errInvalidRequest)
 		}
 
 		out.From = &v
@@ -266,34 +263,34 @@ func extractListParamsFromQuery(q url.Values) (service.ListPostsParams, error) {
 	if s := q.Get("to"); s != "" {
 		v, err := strconv.ParseUint(s, 10, 64)
 		if err != nil {
-			return service.ListPostsParams{}, fmt.Errorf("%w: failed to parse from", errInvalidRequest)
+			return nil, fmt.Errorf("%w: failed to parse from", errInvalidRequest)
 		}
 
 		out.To = &v
 	}
 
-	return out, nil
+	return &out, nil
 }
 
-func extractProfileIDsFromPosts(p []entities.CalculatedPost) []string {
+func extractProfileIDsFromPosts(p []*storage.Post) []string {
 	out := make([]string, 0, len(p))
 	m := make(map[string]struct{}, len(p))
 
-	for i := range p {
-		if _, ok := m[p[i].Owner]; !ok {
-			out = append(out, p[i].Owner)
-			m[p[i].Owner] = struct{}{}
+	for _, v := range p {
+		if _, ok := m[v.Owner]; !ok {
+			out = append(out, v.Owner)
+			m[v.Owner] = struct{}{}
 		}
 	}
 
 	return out
 }
 
-func extractPostIDsFromPosts(p []entities.CalculatedPost) []service.PostID {
-	out := make([]service.PostID, len(p))
+func extractPostIDsFromPosts(p []*storage.Post) []storage.PostID {
+	out := make([]storage.PostID, len(p))
 
 	for i := range p {
-		out[i] = service.PostID{
+		out[i] = storage.PostID{
 			Owner: p[i].Owner,
 			UUID:  p[i].UUID,
 		}
@@ -303,38 +300,38 @@ func extractPostIDsFromPosts(p []entities.CalculatedPost) []service.PostID {
 }
 
 func newListPostsResponse(
-	posts []entities.CalculatedPost,
-	profiles []entities.Profile,
-	stats map[service.PostID]entities.Stats,
+	posts []*storage.Post,
+	profiles []*storage.Profile,
+	stats map[storage.PostID]storage.Stats,
 ) ListPostsResponse {
 	out := ListPostsResponse{}
 
 	out.Posts = make([]Post, len(posts))
-	for i := range posts {
+	for i, v := range posts {
 		out.Posts[i] = Post{
-			UUID:         posts[i].UUID,
-			Owner:        posts[i].Owner,
-			Title:        posts[i].Title,
-			Category:     posts[i].Category,
-			PreviewImage: posts[i].PreviewImage,
-			Text:         posts[i].Text,
-			Likes:        posts[i].Likes,
-			Dislikes:     posts[i].Dislikes,
-			PDV:          posts[i].PDV,
-			CreatedAt:    uint64(posts[i].CreatedAt.Unix()),
+			UUID:         v.UUID,
+			Owner:        v.Owner,
+			Title:        v.Title,
+			Category:     v.Category,
+			PreviewImage: v.PreviewImage,
+			Text:         v.Text,
+			Likes:        v.Likes,
+			Dislikes:     v.Dislikes,
+			PDV:          v.PDV,
+			CreatedAt:    uint64(v.CreatedAt.Unix()),
 		}
 	}
 
 	out.Profiles = make(map[string]Profile, len(out.Profiles))
-	for i := range profiles {
-		out.Profiles[profiles[i].Address] = Profile{
-			Address:   profiles[i].Address,
-			FirstName: profiles[i].FirstName,
-			LastName:  profiles[i].LastName,
-			Avatar:    profiles[i].Avatar,
-			Gender:    profiles[i].Gender,
-			Birthday:  profiles[i].Birthday,
-			CreatedAt: uint64(profiles[i].CreatedAt.Unix()),
+	for _, v := range profiles {
+		out.Profiles[v.Address] = Profile{
+			Address:   v.Address,
+			FirstName: v.FirstName,
+			LastName:  v.LastName,
+			Avatar:    v.Avatar,
+			Gender:    v.Gender,
+			Birthday:  v.Birthday,
+			CreatedAt: uint64(v.CreatedAt.Unix()),
 		}
 	}
 
