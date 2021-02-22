@@ -122,6 +122,10 @@ func (s pg) GetHeight(ctx context.Context) (uint64, error) {
 }
 
 func (s pg) GetProfiles(ctx context.Context, addr []string) ([]*storage.Profile, error) {
+	if len(addr) == 0 {
+		return []*storage.Profile{}, nil
+	}
+
 	addr = stringsUnique(addr)
 
 	query, args, err := sqlx.In(`
@@ -355,6 +359,10 @@ func (s pg) ListPosts(ctx context.Context, p *storage.ListPostsParams) ([]*stora
 }
 
 func (s pg) GetStats(ctx context.Context, id []storage.PostID) (map[storage.PostID]storage.Stats, error) {
+	if len(id) == 0 {
+		return map[storage.PostID]storage.Stats{}, nil
+	}
+
 	owners, uuids := make([]string, len(id)), make([]string, len(id))
 	for i := range id {
 		owners[i] = id[i].Owner

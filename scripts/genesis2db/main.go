@@ -113,7 +113,7 @@ func main() {
 			Text:         v.Text,
 			CreatedAt:    time.Unix(int64(v.CreatedAt), 0),
 		}); err != nil {
-			logrus.WithError(err).Fatal("failed to put profile into db")
+			logrus.WithError(err).Fatal("failed to put post into db")
 		}
 
 		if i%20 == 0 {
@@ -138,11 +138,6 @@ func main() {
 	logrus.Info("refreshing posts view")
 	if _, err := db.Exec(`REFRESH MATERIALIZED VIEW calculated_post`); err != nil {
 		logrus.WithError(err).Fatal("failed to refresh posts view")
-	}
-
-	logrus.Info("refreshing stats view")
-	if _, err := db.Exec(`REFRESH MATERIALIZED VIEW stats`); err != nil {
-		logrus.WithError(err).Fatal("failed to refresh stats")
 	}
 
 	logrus.Info("done")
