@@ -88,7 +88,7 @@ func (s pg) WithLockedHeight(ctx context.Context, height uint64, f func(s storag
 			return fmt.Errorf("failed to save height: failed to exec: %w", err)
 		}
 
-		if _, err := tx.ExecContext(ctx, `REFRESH MATERIALIZED VIEW calculated_post`); err != nil {
+		if _, err := tx.ExecContext(ctx, `REFRESH MATERIALIZED VIEW CONCURRENTLY calculated_post`); err != nil {
 			return fmt.Errorf("failed to refresh calculated_post view: failed to exec: %w", err)
 		}
 
@@ -298,40 +298,40 @@ func (s pg) Unfollow(ctx context.Context, follower, followee string) error {
 }
 
 func (s pg) ListPosts(ctx context.Context, p *storage.ListPostsParams) ([]*storage.Post, error) {
-	var query string
+	var b strings.Builder
 	var args []interface{}
 
-	query += `
+	b.WriteString(`
 		SELECT
 			owner, uuid, title, category, preview_image, text, created_at, likes, dislikes, pdv
 		FROM calculated_post
-	`
+	`)
 
 	if p.FollowedBy != nil {
-		query += `
+		b.WriteString(`
 			INNER JOIN follow ON calculated_post.owner = follow.followee AND follow.follower = ?
-		`
+		`)
 		args = append(args, *p.FollowedBy)
 	}
 
 	if p.LikedBy != nil {
-		query += `
+		b.WriteString(`
 			INNER JOIN "like" ON calculated_post.owner = "like".post_owner AND calculated_post.uuid = "like".post_uuid AND "like".liked_by = ?
-		`
+		`)
 		args = append(args, *p.LikedBy)
 	}
 
 	if wheres, whereArgs := whereClausesFromListPostsParams(p); len(wheres) > 0 {
-		query += ` WHERE ` + strings.Join(wheres, " AND ") // nolint: gosec
+		b.WriteString(` WHERE ` + strings.Join(wheres, " AND ")) // nolint: gosec
 		args = append(args, whereArgs...)
 	}
 
-	query += fmt.Sprintf(`
+	b.WriteString(fmt.Sprintf(`
 		ORDER BY %s %s LIMIT ?
-	`, p.SortBy, p.OrderBy)
+	`, p.SortBy, p.OrderBy))
 	args = append(args, p.Limit)
 
-	query = s.ext.Rebind(query)
+	query := s.ext.Rebind(b.String())
 
 	var res []*postDTO
 	if err := sqlx.SelectContext(ctx, s.ext, &res, query, args...); err != nil {

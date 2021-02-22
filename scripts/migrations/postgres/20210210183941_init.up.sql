@@ -58,7 +58,7 @@ CREATE MATERIALIZED VIEW calculated_post AS
     WHERE deleted_at IS NULL
     GROUP BY owner, uuid, title, category, preview_image, text, post.created_at;
 
-CREATE INDEX post_pk_idx ON calculated_post(owner, uuid);
+CREATE UNIQUE INDEX post_pk_idx ON calculated_post(owner, uuid);
 CREATE INDEX post_created_at_idx ON calculated_post(created_at DESC);
 CREATE INDEX post_likes_idx ON calculated_post(likes DESC);
 CREATE INDEX post_category_idx ON calculated_post(category);
