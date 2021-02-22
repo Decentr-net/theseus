@@ -338,13 +338,7 @@ func newListPostsResponse(
 	out.Stats = make(map[string]Stats, len(stats))
 
 	for k, v := range stats {
-		s := make(Stats, len(v))
-
-		for k, v := range v {
-			s[k.Format(rfc3339date)] = v
-		}
-
-		out.Stats[fmt.Sprintf("%s/%s", k.Owner, k.UUID)] = s
+		out.Stats[fmt.Sprintf("%s/%s", k.Owner, k.UUID)] = Stats(v)
 	}
 
 	return out

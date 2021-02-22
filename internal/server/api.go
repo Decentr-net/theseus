@@ -4,8 +4,6 @@ import (
 	community "github.com/Decentr-net/decentr/x/community/types"
 )
 
-const rfc3339date = "2006-01-02"
-
 const maxLimit = 100
 const defaultLimit = 20
 

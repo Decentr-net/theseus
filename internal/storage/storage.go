@@ -117,5 +117,5 @@ type Profile struct {
 	CreatedAt time.Time
 }
 
-// Stats is map where key is date and value is uPDV count.
-type Stats map[time.Time]uint64
+// Stats is map where key is date in RFC3339 format and value is uPDV count.
+type Stats map[string]uint64
