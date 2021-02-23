@@ -4,6 +4,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -92,6 +93,10 @@ func (s pg) WithLockedHeight(ctx context.Context, height uint64, f func(s storag
 			return fmt.Errorf("failed to refresh calculated_post view: failed to exec: %w", err)
 		}
 
+		if _, err := tx.ExecContext(ctx, `REFRESH MATERIALIZED VIEW CONCURRENTLY stats`); err != nil {
+			return fmt.Errorf("failed to refresh stats view: failed to exec: %w", err)
+		}
+
 		return nil
 	}(pg{ext: tx}); err != nil {
 		if err := tx.Rollback(); err != nil {
@@ -114,14 +119,6 @@ func (s pg) GetHeight(ctx context.Context) (uint64, error) {
 	}
 
 	return h, nil
-}
-
-func (s pg) SetHeight(ctx context.Context, h uint64) error {
-	if _, err := s.ext.ExecContext(ctx, `UPDATE height SET height=$1`, h); err != nil {
-		return fmt.Errorf("failed to exec: %w", err)
-	}
-
-	return nil
 }
 
 func (s pg) GetProfiles(ctx context.Context, addr []string) ([]*storage.Profile, error) {
@@ -358,7 +355,40 @@ func (s pg) ListPosts(ctx context.Context, p *storage.ListPostsParams) ([]*stora
 }
 
 func (s pg) GetStats(ctx context.Context, id []storage.PostID) (map[storage.PostID]storage.Stats, error) {
-	panic("implement me")
+	owners, uuids := make([]string, len(id)), make([]string, len(id))
+	for i := range id {
+		owners[i] = id[i].Owner
+		uuids[i] = id[i].UUID
+	}
+
+	type statsDTO struct {
+		Owner string          `db:"owner"`
+		UUID  string          `db:"uuid"`
+		Stats json.RawMessage `db:"stats"`
+	}
+
+	var res []*statsDTO
+
+	if err := sqlx.SelectContext(ctx, s.ext, &res, `
+		WITH clause AS ( SELECT UNNEST($1::TEXT[]) AS owner, UNNEST($2::TEXT[]) AS uuid )
+		SELECT owner, uuid, stats FROM stats
+			INNER JOIN clause USING(owner, uuid)
+	`, pq.StringArray(owners), pq.StringArray(uuids)); err != nil {
+		return nil, fmt.Errorf("failed to select: %w", err)
+	}
+
+	out := make(map[storage.PostID]storage.Stats, len(res))
+
+	for _, v := range res {
+		var s storage.Stats
+		if err := json.Unmarshal(v.Stats, &s); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal stats: %w", err)
+		}
+
+		out[storage.PostID{Owner: v.Owner, UUID: v.UUID}] = s
+	}
+
+	return out, nil
 }
 
 // New creates new instance of pg.

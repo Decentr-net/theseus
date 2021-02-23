@@ -124,10 +124,14 @@ func cleanup(t *testing.T) {
 	require.NoError(t, err)
 	_, err = db.ExecContext(ctx, `DELETE FROM post`)
 	require.NoError(t, err)
+
+	refreshViews(t)
 }
 
-func refreshPosts(t *testing.T) {
+func refreshViews(t *testing.T) {
 	_, err := db.ExecContext(ctx, `REFRESH MATERIALIZED VIEW calculated_post`)
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, `REFRESH MATERIALIZED VIEW stats`)
 	require.NoError(t, err)
 }
 
@@ -254,7 +258,7 @@ func TestPg_CreatePost(t *testing.T) {
 	}
 
 	require.NoError(t, s.CreatePost(ctx, &expected))
-	refreshPosts(t)
+	refreshViews(t)
 
 	p, err := s.GetPost(ctx, storage.PostID{expected.Owner, expected.UUID})
 	require.NoError(t, err)
@@ -290,10 +294,10 @@ func TestPg_DeletePost(t *testing.T) {
 	}
 
 	require.NoError(t, s.CreatePost(ctx, &p))
-	refreshPosts(t)
+	refreshViews(t)
 
 	require.NoError(t, s.DeletePost(ctx, storage.PostID{p.Owner, p.UUID}, p.CreatedAt, "moderator"))
-	refreshPosts(t)
+	refreshViews(t)
 
 	_, err := s.GetPost(ctx, storage.PostID{p.Owner, p.UUID})
 	require.Equal(t, storage.ErrNotFound, err)
@@ -330,7 +334,7 @@ func TestPg_SetLike(t *testing.T) {
 	require.NoError(t, s.SetLike(ctx, storage.PostID{p.Owner, p.UUID}, 1, p.CreatedAt, "liker"))
 	require.NoError(t, s.SetLike(ctx, storage.PostID{p.Owner, p.UUID}, -1, p.CreatedAt, "liker2"))
 	require.NoError(t, s.SetLike(ctx, storage.PostID{p.Owner, p.UUID}, -1, p.CreatedAt, "liker3"))
-	refreshPosts(t)
+	refreshViews(t)
 
 	post, err := s.GetPost(ctx, storage.PostID{p.Owner, p.UUID})
 	require.NoError(t, err)
@@ -398,7 +402,7 @@ func TestPg_ListPosts(t *testing.T) {
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, 1, time.Unix(1, 0), "4"))
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, 1, time.Unix(1, 0), "5"))
 
-	refreshPosts(t)
+	refreshViews(t)
 
 	cat := community.Category(3)
 	owner := "2"
@@ -505,4 +509,38 @@ func TestPg_ListPosts(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPg_GetStats(t *testing.T) {
+	defer cleanup(t)
+
+	today := time.Now().UTC()
+	yesterday := today.Add(-time.Hour * 24)
+	monthAgo := today.Add(-time.Hour * 24 * 32)
+
+	require.NoError(t, s.CreatePost(ctx, &storage.CreatePostParams{UUID: "1", Owner: "1", Category: 1, CreatedAt: time.Unix(1, 0)}))
+	require.NoError(t, s.CreatePost(ctx, &storage.CreatePostParams{UUID: "2", Owner: "2", Category: 2, CreatedAt: time.Unix(2, 0)}))
+
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"1", "1"}, 1, today, "3"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"1", "1"}, 1, monthAgo, "4"))
+
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, 1, today, "2"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, 1, today, "5"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, 1, yesterday, "3"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, 1, monthAgo, "4"))
+
+	refreshViews(t)
+
+	stats, err := s.GetStats(ctx, []storage.PostID{{"1", "1"}, {"2", "2"}})
+	require.NoError(t, err)
+	require.Len(t, stats, 2)
+
+	p := stats[storage.PostID{"1", "1"}]
+	require.Len(t, p, 1)
+	require.EqualValues(t, 1, p[today.Format("2006-01-02")])
+
+	p = stats[storage.PostID{"2", "2"}]
+	require.Len(t, p, 2)
+	require.EqualValues(t, 2, p[today.Format("2006-01-02")])
+	require.EqualValues(t, 1, p[yesterday.Format("2006-01-02")])
 }

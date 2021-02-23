@@ -48,6 +48,18 @@ CREATE TABLE "like" (
     FOREIGN KEY (post_owner, post_uuid) REFERENCES post(owner, uuid)
 );
 
+CREATE MATERIALIZED VIEW stats AS
+    WITH r AS (
+        SELECT liked_at::DATE as date, post_owner AS owner, post_uuid as uuid, SUM(weight) as pdv
+        FROM "like"
+        WHERE liked_at > NOW() - '1 month'::INTERVAL
+        GROUP BY owner, uuid, date
+    )
+    SELECT owner, uuid, json_object_agg(date, pdv) AS stats FROM r
+    GROUP BY owner, uuid;
+
+CREATE UNIQUE INDEX stats_pk_idx ON stats(owner, uuid);
+
 CREATE MATERIALIZED VIEW calculated_post AS
     SELECT owner, uuid, title, category, preview_image, text, post.created_at,
         COALESCE(COUNT(weight) FILTER (WHERE weight = 1), 0) as likes,
@@ -58,11 +70,10 @@ CREATE MATERIALIZED VIEW calculated_post AS
     WHERE deleted_at IS NULL
     GROUP BY owner, uuid, title, category, preview_image, text, post.created_at;
 
-CREATE UNIQUE INDEX post_pk_idx ON calculated_post(owner, uuid);
-CREATE INDEX post_created_at_idx ON calculated_post(created_at DESC);
-CREATE INDEX post_likes_idx ON calculated_post(likes DESC);
-CREATE INDEX post_category_idx ON calculated_post(category);
-
+CREATE UNIQUE INDEX calculated_post_pk_idx ON calculated_post(owner, uuid);
+CREATE INDEX calculated_post_created_at_idx ON calculated_post(created_at DESC);
+CREATE INDEX calculated_post_likes_idx ON calculated_post(likes DESC);
+CREATE INDEX calculated_post_category_idx ON calculated_post(category);
 
 CREATE OR REPLACE FUNCTION set_profile() RETURNS TRIGGER AS $set_profile$
 DECLARE

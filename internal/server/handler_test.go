@@ -92,8 +92,8 @@ func Test_listPosts(t *testing.T) {
 	s.EXPECT().GetStats(gomock.Any(), []storage.PostID{
 		{"owner", "uuid"}, {"owner2", "uuid2"},
 	}).Return(map[storage.PostID]storage.Stats{
-		{"owner", "uuid"}:   {timestamp: 1},
-		{"owner2", "uuid2"}: {timestamp: 2},
+		{"owner", "uuid"}:   {"1970-01-01": 1},
+		{"owner2", "uuid2"}: {"1970-01-01": 2},
 	}, nil)
 
 	router := chi.NewRouter()
