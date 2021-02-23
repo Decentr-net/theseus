@@ -6,16 +6,6 @@ import (
 
 const rfc3339date = "2006-01-02"
 
-const (
-	createdAtSort = "created_at"
-	likesSort     = "likes"
-)
-
-const (
-	ascendingOrder  = "asc"
-	descendingOrder = "desc"
-)
-
 const maxLimit = 100
 const defaultLimit = 20
 
@@ -45,7 +35,7 @@ type Post struct {
 	Text         string             `json:"text"`
 	Likes        uint32             `json:"likes"`
 	Dislikes     uint32             `json:"dislikes"`
-	PDV          uint64             `json:"pdv"`
+	PDV          int64              `json:"pdv"`
 	CreatedAt    uint64             `json:"created_at"`
 }
 

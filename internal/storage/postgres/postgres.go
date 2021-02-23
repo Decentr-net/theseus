@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -14,7 +15,6 @@ import (
 
 	community "github.com/Decentr-net/decentr/x/community/types"
 
-	"github.com/Decentr-net/theseus/internal/entities"
 	"github.com/Decentr-net/theseus/internal/storage"
 )
 
@@ -35,6 +35,9 @@ type postDTO struct {
 	PreviewImage string    `db:"preview_image"`
 	Text         string    `db:"text"`
 	CreatedAt    time.Time `db:"created_at"`
+	Likes        uint32    `db:"likes"`
+	Dislikes     uint32    `db:"dislikes"`
+	PDV          int64     `db:"pdv"`
 }
 
 type profileDTO struct {
@@ -85,6 +88,10 @@ func (s pg) WithLockedHeight(ctx context.Context, height uint64, f func(s storag
 			return fmt.Errorf("failed to save height: failed to exec: %w", err)
 		}
 
+		if _, err := tx.ExecContext(ctx, `REFRESH MATERIALIZED VIEW CONCURRENTLY calculated_post`); err != nil {
+			return fmt.Errorf("failed to refresh calculated_post view: failed to exec: %w", err)
+		}
+
 		return nil
 	}(pg{ext: tx}); err != nil {
 		if err := tx.Rollback(); err != nil {
@@ -117,7 +124,7 @@ func (s pg) SetHeight(ctx context.Context, h uint64) error {
 	return nil
 }
 
-func (s pg) GetProfiles(ctx context.Context, addr []string) ([]*entities.Profile, error) {
+func (s pg) GetProfiles(ctx context.Context, addr []string) ([]*storage.Profile, error) {
 	addr = stringsUnique(addr)
 
 	query, args, err := sqlx.In(`
@@ -135,9 +142,9 @@ func (s pg) GetProfiles(ctx context.Context, addr []string) ([]*entities.Profile
 		return nil, fmt.Errorf("failed to query: %w", err)
 	}
 
-	out := make([]*entities.Profile, len(p))
+	out := make([]*storage.Profile, len(p))
 	for i, v := range p {
-		out[i] = &entities.Profile{
+		out[i] = &storage.Profile{
 			Address:   v.Address,
 			FirstName: v.FirstName,
 			LastName:  v.LastName,
@@ -151,7 +158,7 @@ func (s pg) GetProfiles(ctx context.Context, addr []string) ([]*entities.Profile
 	return out, nil
 }
 
-func (s pg) SetProfile(ctx context.Context, p *entities.Profile) error {
+func (s pg) SetProfile(ctx context.Context, p *storage.Profile) error {
 	profile := profileDTO{
 		Address:   p.Address,
 		FirstName: p.FirstName,
@@ -176,7 +183,7 @@ func (s pg) SetProfile(ctx context.Context, p *entities.Profile) error {
 	return nil
 }
 
-func (s pg) CreatePost(ctx context.Context, p *entities.Post) error {
+func (s pg) CreatePost(ctx context.Context, p *storage.CreatePostParams) error {
 	post := postDTO{
 		UUID:         p.UUID,
 		Owner:        p.Owner,
@@ -199,15 +206,15 @@ func (s pg) CreatePost(ctx context.Context, p *entities.Post) error {
 	return nil
 }
 
-func (s pg) GetPost(ctx context.Context, owner, uuid string) (*entities.Post, error) {
+func (s pg) GetPost(ctx context.Context, id storage.PostID) (*storage.Post, error) {
 	var p postDTO
 
 	if err := sqlx.GetContext(ctx, s.ext, &p, `
-			SELECT owner, uuid, title, category, preview_image, text, created_at
-			FROM post
-			WHERE owner = $1 AND uuid = $2 AND deleted_at IS NULL
+			SELECT owner, uuid, title, category, preview_image, text, created_at, likes, dislikes, pdv
+			FROM calculated_post
+			WHERE owner = $1 AND uuid = $2
 		`,
-		owner, uuid,
+		id.Owner, id.UUID,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, storage.ErrNotFound
@@ -216,21 +223,24 @@ func (s pg) GetPost(ctx context.Context, owner, uuid string) (*entities.Post, er
 		return nil, fmt.Errorf("failed to query: %w", err)
 	}
 
-	return &entities.Post{
+	return &storage.Post{
 		UUID:         p.UUID,
 		Owner:        p.Owner,
 		Title:        p.Title,
 		Category:     community.Category(p.Category),
 		PreviewImage: p.PreviewImage,
 		Text:         p.Text,
+		Likes:        p.Likes,
+		Dislikes:     p.Dislikes,
+		PDV:          p.PDV,
 		CreatedAt:    p.CreatedAt,
 	}, nil
 }
 
-func (s pg) DeletePost(ctx context.Context, postOwner string, postUUID string, timestamp time.Time, deletedBy string) error {
+func (s pg) DeletePost(ctx context.Context, id storage.PostID, timestamp time.Time, deletedBy string) error {
 	res, err := s.ext.ExecContext(ctx,
 		`UPDATE post SET deleted_at=$3, deleted_by=$4 WHERE owner=$1 AND uuid=$2 AND deleted_at IS NULL`,
-		postOwner, postUUID, timestamp.UTC(), deletedBy,
+		id.Owner, id.UUID, timestamp.UTC(), deletedBy,
 	)
 
 	if err != nil {
@@ -244,14 +254,14 @@ func (s pg) DeletePost(ctx context.Context, postOwner string, postUUID string, t
 	return nil
 }
 
-func (s pg) SetLike(ctx context.Context, postOwner string, postUUID string, weight community.LikeWeight,
+func (s pg) SetLike(ctx context.Context, id storage.PostID, weight community.LikeWeight,
 	timestamp time.Time, likeOwner string) error {
 	if _, err := s.ext.ExecContext(ctx, `
 			INSERT INTO "like"(post_owner, post_uuid, liked_by, weight, liked_at)
 				VALUES($1, $2, $3, $4, $5)
 			ON CONFLICT(post_owner, post_uuid, liked_by) DO UPDATE SET
 				weight=excluded.weight, liked_at=excluded.liked_at`,
-		postOwner, postUUID, likeOwner, weight, timestamp.UTC(),
+		id.Owner, id.UUID, likeOwner, weight, timestamp.UTC(),
 	); err != nil {
 		if err, ok := err.(*pq.Error); ok && err.Code == foreignKeyViolation {
 			return storage.ErrNotFound
@@ -287,6 +297,70 @@ func (s pg) Unfollow(ctx context.Context, follower, followee string) error {
 	return nil
 }
 
+func (s pg) ListPosts(ctx context.Context, p *storage.ListPostsParams) ([]*storage.Post, error) {
+	var b strings.Builder
+	var args []interface{}
+
+	b.WriteString(`
+		SELECT
+			owner, uuid, title, category, preview_image, text, created_at, likes, dislikes, pdv
+		FROM calculated_post
+	`)
+
+	if p.FollowedBy != nil {
+		b.WriteString(`
+			INNER JOIN follow ON calculated_post.owner = follow.followee AND follow.follower = ?
+		`)
+		args = append(args, *p.FollowedBy)
+	}
+
+	if p.LikedBy != nil {
+		b.WriteString(`
+			INNER JOIN "like" ON calculated_post.owner = "like".post_owner AND calculated_post.uuid = "like".post_uuid AND "like".liked_by = ?
+		`)
+		args = append(args, *p.LikedBy)
+	}
+
+	if wheres, whereArgs := whereClausesFromListPostsParams(p); len(wheres) > 0 {
+		b.WriteString(` WHERE ` + strings.Join(wheres, " AND ")) // nolint: gosec
+		args = append(args, whereArgs...)
+	}
+
+	b.WriteString(fmt.Sprintf(`
+		ORDER BY %s %s LIMIT ?
+	`, p.SortBy, p.OrderBy))
+	args = append(args, p.Limit)
+
+	query := s.ext.Rebind(b.String())
+
+	var res []*postDTO
+	if err := sqlx.SelectContext(ctx, s.ext, &res, query, args...); err != nil {
+		return nil, fmt.Errorf("failed to select: %w", err)
+	}
+
+	out := make([]*storage.Post, len(res))
+	for i, v := range res {
+		out[i] = &storage.Post{
+			UUID:         v.UUID,
+			Owner:        v.Owner,
+			Title:        v.Title,
+			Category:     community.Category(v.Category),
+			PreviewImage: v.PreviewImage,
+			Text:         v.Text,
+			CreatedAt:    v.CreatedAt,
+			Likes:        v.Likes,
+			Dislikes:     v.Dislikes,
+			PDV:          v.PDV,
+		}
+	}
+
+	return out, nil
+}
+
+func (s pg) GetStats(ctx context.Context, id []storage.PostID) (map[storage.PostID]storage.Stats, error) {
+	panic("implement me")
+}
+
 // New creates new instance of pg.
 func New(db *sql.DB) storage.Storage {
 	return pg{
@@ -306,4 +380,47 @@ func stringsUnique(s []string) []string {
 	}
 
 	return out
+}
+
+func whereClausesFromListPostsParams(p *storage.ListPostsParams) ([]string, []interface{}) {
+	var (
+		where []string
+		args  []interface{}
+	)
+
+	if p.Category != nil {
+		where = append(where, `category = ?`)
+		args = append(args, *p.Category)
+	}
+
+	if p.Owner != nil {
+		where = append(where, `owner = ?`)
+		args = append(args, *p.Owner)
+	}
+
+	if p.From != nil {
+		where = append(where, `created_at > ?`)
+		args = append(args, time.Unix(int64(*p.From), 0).UTC())
+	}
+
+	if p.To != nil {
+		where = append(where, `created_at < ?`)
+		args = append(args, time.Unix(int64(*p.To), 0).UTC())
+	}
+
+	if p.After != nil {
+		comp := "<"
+		if p.OrderBy == storage.AscendingOrder {
+			comp = ">"
+		}
+
+		// nolint: gosec
+		where = append(where, fmt.Sprintf(`
+			%s %s (SELECT %s FROM calculated_post WHERE owner = ? AND uuid = ? FETCH FIRST ROW ONLY)
+		`, p.SortBy, comp, p.SortBy))
+
+		args = append(args, p.After.Owner, p.After.UUID)
+	}
+
+	return where, args
 }

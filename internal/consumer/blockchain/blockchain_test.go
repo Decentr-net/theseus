@@ -16,9 +16,8 @@ import (
 	community "github.com/Decentr-net/decentr/x/community/types"
 	profile "github.com/Decentr-net/decentr/x/profile/types"
 
-	"github.com/Decentr-net/theseus/internal/entities"
-	"github.com/Decentr-net/theseus/internal/service"
-	servicemock "github.com/Decentr-net/theseus/internal/service/mock"
+	"github.com/Decentr-net/theseus/internal/storage"
+	storagemock "github.com/Decentr-net/theseus/internal/storage/mock"
 )
 
 var errTest = errors.New("test")
@@ -26,7 +25,7 @@ var errTest = errors.New("test")
 func TestBlockchain_Run(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
-	f, s := ariadnemock.NewMockFetcher(ctrl), servicemock.NewMockService(ctrl)
+	f, s := ariadnemock.NewMockFetcher(ctrl), storagemock.NewMockStorage(ctrl)
 
 	b := New(f, s, time.Nanosecond, time.Nanosecond)
 
@@ -40,7 +39,7 @@ func TestBlockchain_Run(t *testing.T) {
 func TestBlockchain_Run_Error(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
-	f, s := ariadnemock.NewMockFetcher(ctrl), servicemock.NewMockService(ctrl)
+	f, s := ariadnemock.NewMockFetcher(ctrl), storagemock.NewMockStorage(ctrl)
 
 	b := New(f, s, time.Nanosecond, time.Nanosecond)
 
@@ -62,7 +61,7 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 	tt := []struct {
 		name   string
 		msg    sdk.Msg
-		expect func(s *servicemock.MockService)
+		expect func(s *storagemock.MockStorage)
 	}{
 		{
 			name: "create_post",
@@ -74,8 +73,8 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 				PreviewImage: "url",
 				Text:         "text",
 			},
-			expect: func(s *servicemock.MockService) {
-				s.EXPECT().CreatePost(gomock.Any(), &entities.Post{
+			expect: func(s *storagemock.MockStorage) {
+				s.EXPECT().CreatePost(gomock.Any(), &storage.CreatePostParams{
 					UUID:         "1234",
 					Owner:        "decentr1u9slwz3sje8j94ccpwlslflg0506yc8y2ylmtz",
 					Title:        "title",
@@ -94,11 +93,10 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 				Owner:     owner,
 				Weight:    community.LikeWeightDown,
 			},
-			expect: func(s *servicemock.MockService) {
+			expect: func(s *storagemock.MockStorage) {
 				s.EXPECT().SetLike(
 					gomock.Any(),
-					"decentr1u9slwz3sje8j94ccpwlslflg0506yc8y2ylmtz",
-					"1234",
+					storage.PostID{Owner: "decentr1u9slwz3sje8j94ccpwlslflg0506yc8y2ylmtz", UUID: "1234"},
 					community.LikeWeightDown,
 					timestamp,
 					"decentr1u9slwz3sje8j94ccpwlslflg0506yc8y2ylmtz",
@@ -112,10 +110,9 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 				PostUUID:  "1234",
 				Owner:     owner,
 			},
-			expect: func(s *servicemock.MockService) {
+			expect: func(s *storagemock.MockStorage) {
 				s.EXPECT().DeletePost(gomock.Any(),
-					"decentr1u9slwz3sje8j94ccpwlslflg0506yc8y2ylmtz",
-					"1234",
+					storage.PostID{Owner: "decentr1u9slwz3sje8j94ccpwlslflg0506yc8y2ylmtz", UUID: "1234"},
 					timestamp,
 					"decentr1u9slwz3sje8j94ccpwlslflg0506yc8y2ylmtz",
 				)
@@ -133,8 +130,8 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 					Birthday:  "01.02.2006",
 				},
 			},
-			expect: func(s *servicemock.MockService) {
-				s.EXPECT().SetProfile(gomock.Any(), &entities.Profile{
+			expect: func(s *storagemock.MockStorage) {
+				s.EXPECT().SetProfile(gomock.Any(), &storage.Profile{
 					Address:   owner.String(),
 					FirstName: "first_name",
 					LastName:  "last_name",
@@ -151,7 +148,7 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 				Owner: owner,
 				Whom:  owner2,
 			},
-			expect: func(s *servicemock.MockService) {
+			expect: func(s *storagemock.MockStorage) {
 				s.EXPECT().Follow(gomock.Any(), owner.String(), owner2.String())
 			},
 		},
@@ -161,7 +158,7 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 				Owner: owner,
 				Whom:  owner2,
 			},
-			expect: func(s *servicemock.MockService) {
+			expect: func(s *storagemock.MockStorage) {
 				s.EXPECT().Unfollow(gomock.Any(), owner.String(), owner2.String())
 			},
 		},
@@ -172,9 +169,9 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			s := servicemock.NewMockService(gomock.NewController(t))
+			s := storagemock.NewMockStorage(gomock.NewController(t))
 
-			s.EXPECT().OnHeight(gomock.Any(), uint64(1), gomock.Any()).DoAndReturn(func(_ context.Context, _ uint64, f func(_ service.Service) error) error {
+			s.EXPECT().WithLockedHeight(gomock.Any(), uint64(1), gomock.Any()).DoAndReturn(func(_ context.Context, _ uint64, f func(_ storage.Storage) error) error {
 				return f(s)
 			})
 			tc.expect(s)
@@ -195,16 +192,16 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 }
 
 func TestBlockchain_processBlockFunc_errors(t *testing.T) {
-	s := servicemock.NewMockService(gomock.NewController(t))
+	s := storagemock.NewMockStorage(gomock.NewController(t))
 
-	s.EXPECT().OnHeight(gomock.Any(), uint64(1), gomock.Any()).DoAndReturn(func(_ context.Context, _ uint64, f func(_ service.Service) error) error {
+	s.EXPECT().WithLockedHeight(gomock.Any(), uint64(1), gomock.Any()).DoAndReturn(func(_ context.Context, _ uint64, f func(_ storage.Storage) error) error {
 		return context.Canceled
 	})
 
 	require.Error(t, blockchain{s: s}.processBlockFunc(context.Background())(ariadne.Block{Height: 1}))
 
-	s.EXPECT().OnHeight(gomock.Any(), uint64(1), gomock.Any()).DoAndReturn(func(_ context.Context, _ uint64, f func(_ service.Service) error) error {
-		return service.ErrRequestedHeightIsTooLow
+	s.EXPECT().WithLockedHeight(gomock.Any(), uint64(1), gomock.Any()).DoAndReturn(func(_ context.Context, _ uint64, f func(_ storage.Storage) error) error {
+		return storage.ErrRequestedHeightIsTooLow
 	})
 
 	require.NoError(t, blockchain{s: s}.processBlockFunc(context.Background())(ariadne.Block{Height: 1}))

@@ -37,9 +37,6 @@ CREATE TABLE post (
     PRIMARY KEY (owner, uuid)
 );
 
-CREATE INDEX post_created_at_idx ON post(created_at DESC);
-CREATE INDEX post_category_idx ON post(category);
-
 CREATE TABLE "like" (
     post_owner TEXT NOT NULL REFERENCES profile(address),
     post_uuid TEXT NOT NULL,
@@ -50,6 +47,22 @@ CREATE TABLE "like" (
     PRIMARY KEY (post_owner, post_uuid, liked_by),
     FOREIGN KEY (post_owner, post_uuid) REFERENCES post(owner, uuid)
 );
+
+CREATE MATERIALIZED VIEW calculated_post AS
+    SELECT owner, uuid, title, category, preview_image, text, post.created_at,
+        COALESCE(COUNT(weight) FILTER (WHERE weight = 1), 0) as likes,
+        COALESCE(COUNT(weight) FILTER (WHERE weight = -1), 0) AS dislikes,
+        COALESCE(SUM(weight), 0) AS pdv
+    FROM post
+    LEFT JOIN "like" ON post.owner = "like".post_owner AND post.uuid = "like".post_uuid
+    WHERE deleted_at IS NULL
+    GROUP BY owner, uuid, title, category, preview_image, text, post.created_at;
+
+CREATE UNIQUE INDEX post_pk_idx ON calculated_post(owner, uuid);
+CREATE INDEX post_created_at_idx ON calculated_post(created_at DESC);
+CREATE INDEX post_likes_idx ON calculated_post(likes DESC);
+CREATE INDEX post_category_idx ON calculated_post(category);
+
 
 CREATE OR REPLACE FUNCTION set_profile() RETURNS TRIGGER AS $set_profile$
 DECLARE

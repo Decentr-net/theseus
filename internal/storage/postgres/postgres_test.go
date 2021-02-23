@@ -23,7 +23,8 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/Decentr-net/theseus/internal/entities"
+	community "github.com/Decentr-net/decentr/x/community/types"
+
 	"github.com/Decentr-net/theseus/internal/storage"
 )
 
@@ -125,6 +126,11 @@ func cleanup(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func refreshPosts(t *testing.T) {
+	_, err := db.ExecContext(ctx, `REFRESH MATERIALIZED VIEW calculated_post`)
+	require.NoError(t, err)
+}
+
 func TestPg_GetHeight(t *testing.T) {
 	defer cleanup(t)
 
@@ -185,7 +191,7 @@ func TestPg_WithLockedHeight(t *testing.T) {
 func TestPg_SetProfile(t *testing.T) {
 	defer cleanup(t)
 
-	expected := entities.Profile{
+	expected := storage.Profile{
 		Address:   "address",
 		FirstName: "first_name",
 		LastName:  "last_name",
@@ -211,7 +217,7 @@ func TestPg_SetProfile(t *testing.T) {
 func TestPg_GetProfiles(t *testing.T) {
 	defer cleanup(t)
 
-	p := entities.Profile{
+	p := storage.Profile{
 		Address:   "address",
 		FirstName: "first_name",
 		LastName:  "last_name",
@@ -237,7 +243,7 @@ func TestPg_GetProfiles(t *testing.T) {
 func TestPg_CreatePost(t *testing.T) {
 	defer cleanup(t)
 
-	expected := entities.Post{
+	expected := storage.CreatePostParams{
 		UUID:         "1",
 		Owner:        "2",
 		Title:        "3",
@@ -248,8 +254,9 @@ func TestPg_CreatePost(t *testing.T) {
 	}
 
 	require.NoError(t, s.CreatePost(ctx, &expected))
+	refreshPosts(t)
 
-	p, err := s.GetPost(ctx, expected.Owner, expected.UUID)
+	p, err := s.GetPost(ctx, storage.PostID{expected.Owner, expected.UUID})
 	require.NoError(t, err)
 	require.Equal(t, expected.Owner, p.Owner)
 	require.Equal(t, expected.UUID, p.UUID)
@@ -265,14 +272,14 @@ func TestPg_GetPost(t *testing.T) {
 
 	// GetPost tested in other tests
 
-	_, err := s.GetPost(ctx, "1", "2")
+	_, err := s.GetPost(ctx, storage.PostID{"1", "2"})
 	require.Equal(t, storage.ErrNotFound, err)
 }
 
 func TestPg_DeletePost(t *testing.T) {
 	defer cleanup(t)
 
-	p := entities.Post{
+	p := storage.CreatePostParams{
 		UUID:         "1",
 		Owner:        "2",
 		Title:        "3",
@@ -283,10 +290,12 @@ func TestPg_DeletePost(t *testing.T) {
 	}
 
 	require.NoError(t, s.CreatePost(ctx, &p))
+	refreshPosts(t)
 
-	require.NoError(t, s.DeletePost(ctx, p.Owner, p.UUID, p.CreatedAt, "moderator"))
+	require.NoError(t, s.DeletePost(ctx, storage.PostID{p.Owner, p.UUID}, p.CreatedAt, "moderator"))
+	refreshPosts(t)
 
-	_, err := s.GetPost(ctx, p.Owner, p.UUID)
+	_, err := s.GetPost(ctx, storage.PostID{p.Owner, p.UUID})
 	require.Equal(t, storage.ErrNotFound, err)
 
 	var info struct {
@@ -305,9 +314,9 @@ func TestPg_DeletePost(t *testing.T) {
 func TestPg_SetLike(t *testing.T) {
 	defer cleanup(t)
 
-	require.Equal(t, storage.ErrNotFound, s.SetLike(ctx, "1", "2", 1, time.Now(), "liker"))
+	require.Equal(t, storage.ErrNotFound, s.SetLike(ctx, storage.PostID{"1", "2"}, 1, time.Now(), "liker"))
 
-	p := entities.Post{
+	p := storage.CreatePostParams{
 		UUID:         "1",
 		Owner:        "2",
 		Title:        "3",
@@ -318,7 +327,17 @@ func TestPg_SetLike(t *testing.T) {
 	}
 
 	require.NoError(t, s.CreatePost(ctx, &p))
-	require.NoError(t, s.SetLike(ctx, p.Owner, p.UUID, 1, p.CreatedAt, "liker"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{p.Owner, p.UUID}, 1, p.CreatedAt, "liker"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{p.Owner, p.UUID}, -1, p.CreatedAt, "liker2"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{p.Owner, p.UUID}, -1, p.CreatedAt, "liker3"))
+	refreshPosts(t)
+
+	post, err := s.GetPost(ctx, storage.PostID{p.Owner, p.UUID})
+	require.NoError(t, err)
+
+	require.EqualValues(t, 1, post.Likes)
+	require.EqualValues(t, 2, post.Dislikes)
+	require.EqualValues(t, -1, post.PDV)
 }
 
 func TestPg_Follow(t *testing.T) {
@@ -351,4 +370,139 @@ func TestPg_Unfollow(t *testing.T) {
 	err := sqlx.NewDb(db, "postgres").GetContext(ctx, &f, `SELECT * FROM follow`)
 	require.Error(t, err)
 	require.True(t, errors.Is(err, sql.ErrNoRows))
+}
+
+func TestPg_ListPosts(t *testing.T) {
+	defer cleanup(t)
+
+	require.NoError(t, s.CreatePost(ctx, &storage.CreatePostParams{UUID: "1", Owner: "1", Category: 1, CreatedAt: time.Unix(1, 0)}))
+	require.NoError(t, s.CreatePost(ctx, &storage.CreatePostParams{UUID: "2", Owner: "2", Category: 2, CreatedAt: time.Unix(2, 0)}))
+	require.NoError(t, s.CreatePost(ctx, &storage.CreatePostParams{UUID: "3", Owner: "3", Category: 3, CreatedAt: time.Unix(3, 0)}))
+	require.NoError(t, s.CreatePost(ctx, &storage.CreatePostParams{UUID: "4", Owner: "4", Category: 4, CreatedAt: time.Unix(4, 0)}))
+	require.NoError(t, s.CreatePost(ctx, &storage.CreatePostParams{UUID: "5", Owner: "5", Category: 5, CreatedAt: time.Unix(5, 0)}))
+
+	require.NoError(t, s.Follow(ctx, "1", "2"))
+	require.NoError(t, s.Follow(ctx, "1", "3"))
+
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"5", "5"}, 1, time.Unix(1, 0), "3"))
+
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"1", "1"}, 1, time.Unix(1, 0), "3"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"1", "1"}, 1, time.Unix(1, 0), "4"))
+
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, 1, time.Unix(1, 0), "2"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, 1, time.Unix(1, 0), "3"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, 1, time.Unix(1, 0), "4"))
+
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, 1, time.Unix(1, 0), "2"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, 1, time.Unix(1, 0), "3"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, 1, time.Unix(1, 0), "4"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, 1, time.Unix(1, 0), "5"))
+
+	refreshPosts(t)
+
+	cat := community.Category(3)
+	owner := "2"
+	likedBy := "5"
+	followedBy := "1"
+	from := uint64(2)
+	to := uint64(5)
+	after := storage.PostID{Owner: "2", UUID: "2"}
+
+	tt := []struct {
+		name string
+		p    storage.ListPostsParams
+		ids  []string
+	}{
+		{
+			name: "created_at_asc",
+			p: storage.ListPostsParams{
+				SortBy:  storage.CreatedAtSortType,
+				OrderBy: storage.AscendingOrder,
+				Limit:   100,
+			},
+			ids: []string{"1", "2", "3", "4", "5"},
+		},
+		{
+			name: "likes_desc",
+			p: storage.ListPostsParams{
+				SortBy:  storage.LikesSortType,
+				OrderBy: storage.DescendingOrder,
+				Limit:   100,
+			},
+			ids: []string{"4", "2", "1", "5", "3"},
+		},
+		{
+			name: "category",
+			p: storage.ListPostsParams{
+				SortBy:   storage.CreatedAtSortType,
+				OrderBy:  storage.DescendingOrder,
+				Category: &cat,
+				Limit:    100,
+			},
+			ids: []string{"3"},
+		},
+		{
+			name: "owner",
+			p: storage.ListPostsParams{
+				SortBy:  storage.LikesSortType,
+				OrderBy: storage.DescendingOrder,
+				Limit:   100,
+				Owner:   &owner,
+			},
+			ids: []string{"2"},
+		},
+		{
+			name: "liked_by",
+			p: storage.ListPostsParams{
+				SortBy:  storage.LikesSortType,
+				OrderBy: storage.DescendingOrder,
+				Limit:   100,
+				LikedBy: &likedBy,
+			},
+			ids: []string{"4"},
+		},
+		{
+			name: "followed_by",
+			p: storage.ListPostsParams{
+				SortBy:     storage.CreatedAtSortType,
+				OrderBy:    storage.AscendingOrder,
+				Limit:      100,
+				FollowedBy: &followedBy,
+			},
+			ids: []string{"2", "3"},
+		},
+		{
+			name: "from_to",
+			p: storage.ListPostsParams{
+				SortBy:  storage.CreatedAtSortType,
+				OrderBy: storage.AscendingOrder,
+				Limit:   100,
+				From:    &from,
+				To:      &to,
+			},
+			ids: []string{"3", "4"},
+		},
+		{
+			name: "after",
+			p: storage.ListPostsParams{
+				SortBy:  storage.CreatedAtSortType,
+				OrderBy: storage.AscendingOrder,
+				Limit:   100,
+				After:   &after,
+			},
+			ids: []string{"3", "4", "5"},
+		},
+	}
+
+	for i := range tt {
+		tc := tt[i]
+		t.Run(tc.name, func(t *testing.T) {
+			p, err := s.ListPosts(ctx, &tc.p)
+			require.NoError(t, err)
+			require.Len(t, p, len(tc.ids))
+			for i, v := range tc.ids {
+				require.Equal(t, v, p[i].UUID)
+			}
+		})
+	}
 }

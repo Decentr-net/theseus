@@ -25,7 +25,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/sirupsen/logrus"
 
-	service "github.com/Decentr-net/theseus/internal/service"
+	"github.com/Decentr-net/theseus/internal/storage"
 )
 
 //go:generate swagger generate spec -t swagger -m -c . -o ../../static/swagger.json
@@ -33,11 +33,11 @@ import (
 const maxBodySize = 1024
 
 type server struct {
-	s service.Service
+	s storage.Storage
 }
 
 // SetupRouter setups handlers to chi router.
-func SetupRouter(s service.Service, r chi.Router) {
+func SetupRouter(s storage.Storage, r chi.Router) {
 	r.Use(
 		swaggerMiddleware,
 		loggerMiddleware,
