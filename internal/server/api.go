@@ -50,4 +50,4 @@ type Profile struct {
 
 // Stats ...
 // Key is RFC3999 date, value is uPDV.
-type Stats map[string]uint64
+type Stats map[string]int64
