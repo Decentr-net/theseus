@@ -118,4 +118,4 @@ type Profile struct {
 }
 
 // Stats is map where key is date in RFC3339 format and value is uPDV count.
-type Stats map[string]uint64
+type Stats map[string]int64
