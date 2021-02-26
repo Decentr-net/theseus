@@ -277,6 +277,10 @@
           "type": "string",
           "x-go-name": "Avatar"
         },
+        "bio": {
+          "type": "string",
+          "x-go-name": "Bio"
+        },
         "birthday": {
           "type": "string",
           "x-go-name": "Birthday"

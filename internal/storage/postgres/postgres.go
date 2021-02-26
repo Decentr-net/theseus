@@ -45,6 +45,7 @@ type profileDTO struct {
 	Address   string    `db:"address"`
 	FirstName string    `db:"first_name"`
 	LastName  string    `db:"last_name"`
+	Bio       string    `db:"bio"`
 	Avatar    string    `db:"avatar"`
 	Gender    string    `db:"gender"`
 	Birthday  string    `db:"birthday"`
@@ -129,7 +130,7 @@ func (s pg) GetProfiles(ctx context.Context, addr []string) ([]*storage.Profile,
 	addr = stringsUnique(addr)
 
 	query, args, err := sqlx.In(`
-			SELECT address, first_name, last_name, avatar, gender, birthday, created_at FROM profile
+			SELECT address, first_name, last_name, bio, avatar, gender, birthday, created_at FROM profile
 			WHERE address IN (?)
 		`, addr)
 
@@ -149,6 +150,7 @@ func (s pg) GetProfiles(ctx context.Context, addr []string) ([]*storage.Profile,
 			Address:   v.Address,
 			FirstName: v.FirstName,
 			LastName:  v.LastName,
+			Bio:       v.Bio,
 			Avatar:    v.Avatar,
 			Gender:    v.Gender,
 			Birthday:  v.Birthday,
@@ -164,6 +166,7 @@ func (s pg) SetProfile(ctx context.Context, p *storage.Profile) error {
 		Address:   p.Address,
 		FirstName: p.FirstName,
 		LastName:  p.LastName,
+		Bio:       p.Bio,
 		Avatar:    p.Avatar,
 		Gender:    p.Gender,
 		Birthday:  p.Birthday,
@@ -172,10 +175,11 @@ func (s pg) SetProfile(ctx context.Context, p *storage.Profile) error {
 
 	if _, err := sqlx.NamedExecContext(ctx, s.ext,
 		`
-			INSERT INTO profile(address, first_name, last_name, avatar, gender, birthday, created_at)
-			VALUES(:address, :first_name, :last_name, :avatar, :gender, :birthday, :created_at)
+			INSERT INTO profile(address, first_name, last_name, bio, avatar, gender, birthday, created_at)
+			VALUES(:address, :first_name, :last_name, :bio, :avatar, :gender, :birthday, :created_at)
 			ON CONFLICT(address) DO UPDATE SET
-			first_name=excluded.first_name, last_name=excluded.last_name, avatar=excluded.avatar, gender=excluded.gender, birthday=excluded.birthday
+				first_name=excluded.first_name, last_name=excluded.last_name, bio=excluded.bio, avatar=excluded.avatar,
+				gender=excluded.gender, birthday=excluded.birthday
 		`, profile,
 	); err != nil {
 		return fmt.Errorf("failed to exec: %w", err)

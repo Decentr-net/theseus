@@ -115,6 +115,7 @@ type Profile struct {
 	Address   string
 	FirstName string
 	LastName  string
+	Bio       string
 	Avatar    string
 	Gender    string
 	Birthday  string

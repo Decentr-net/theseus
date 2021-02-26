@@ -125,6 +125,7 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 				Public: profile.Public{
 					FirstName: "first_name",
 					LastName:  "last_name",
+					Bio:       "bio",
 					Avatar:    "avatar",
 					Gender:    "male",
 					Birthday:  "01.02.2006",
@@ -135,6 +136,7 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 					Address:   owner.String(),
 					FirstName: "first_name",
 					LastName:  "last_name",
+					Bio:       "bio",
 					Avatar:    "avatar",
 					Gender:    "male",
 					Birthday:  "01.02.2006",

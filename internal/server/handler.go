@@ -330,6 +330,7 @@ func newListPostsResponse(
 			Address:   v.Address,
 			FirstName: v.FirstName,
 			LastName:  v.LastName,
+			Bio:       v.Bio,
 			Avatar:    v.Avatar,
 			Gender:    v.Gender,
 			Birthday:  v.Birthday,

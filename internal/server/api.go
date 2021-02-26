@@ -42,6 +42,7 @@ type Profile struct {
 	Address   string `json:"address"`
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
+	Bio       string `json:"bio"`
 	Avatar    string `json:"avatar"`
 	Gender    string `json:"gender"`
 	Birthday  string `json:"birthday"`

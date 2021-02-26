@@ -74,6 +74,7 @@ func main() {
 			Address:   v.Owner.String(),
 			FirstName: v.Public.FirstName,
 			LastName:  v.Public.LastName,
+			Bio:       v.Public.Bio,
 			Avatar:    v.Public.Avatar,
 			Gender:    string(v.Public.Gender),
 			Birthday:  v.Public.Birthday,

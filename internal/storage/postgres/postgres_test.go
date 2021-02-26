@@ -199,6 +199,7 @@ func TestPg_SetProfile(t *testing.T) {
 		Address:   "address",
 		FirstName: "first_name",
 		LastName:  "last_name",
+		Bio:       "bio",
 		Avatar:    "avatar",
 		Gender:    "male",
 		Birthday:  "01.02.2020",
@@ -212,6 +213,7 @@ func TestPg_SetProfile(t *testing.T) {
 	require.Equal(t, expected.Address, p[0].Address)
 	require.Equal(t, expected.FirstName, p[0].FirstName)
 	require.Equal(t, expected.LastName, p[0].LastName)
+	require.Equal(t, expected.Bio, p[0].Bio)
 	require.Equal(t, expected.Avatar, p[0].Avatar)
 	require.Equal(t, expected.Gender, p[0].Gender)
 	require.Equal(t, expected.Birthday, p[0].Birthday)
@@ -225,6 +227,7 @@ func TestPg_GetProfiles(t *testing.T) {
 		Address:   "address",
 		FirstName: "first_name",
 		LastName:  "last_name",
+		Bio:       "bio",
 		Avatar:    "avatar",
 		Gender:    "male",
 		Birthday:  "01.02.2020",

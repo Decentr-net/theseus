@@ -124,6 +124,7 @@ func processMsgSetPublicProfile(ctx context.Context, s storage.Storage, timestam
 		Address:   msg.Owner.String(),
 		FirstName: msg.Public.FirstName,
 		LastName:  msg.Public.LastName,
+		Bio:       msg.Public.Bio,
 		Avatar:    msg.Public.Avatar,
 		Gender:    string(msg.Public.Gender),
 		Birthday:  msg.Public.Birthday,
