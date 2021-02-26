@@ -388,19 +388,40 @@ func TestPg_ListPosts(t *testing.T) {
 	require.NoError(t, s.Follow(ctx, "1", "2"))
 	require.NoError(t, s.Follow(ctx, "1", "3"))
 
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"5", "5"}, 1, time.Unix(1, 0), "13"))
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"5", "5"}, 1, time.Unix(1, 0), "3"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"5", "5"}, -1, time.Unix(1, 0), "4"))
 
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"1", "1"}, 1, time.Unix(1, 0), "3"))
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"1", "1"}, 1, time.Unix(1, 0), "4"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"1", "1"}, 1, time.Unix(1, 0), "13"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"1", "1"}, -1, time.Unix(1, 0), "51"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"1", "1"}, -1, time.Unix(1, 0), "5"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"1", "1"}, -1, time.Unix(1, 0), "6"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"1", "1"}, -1, time.Unix(1, 0), "7"))
 
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, 1, time.Unix(1, 0), "2"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, 1, time.Unix(1, 0), "22"))
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, 1, time.Unix(1, 0), "3"))
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, 1, time.Unix(1, 0), "4"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, -1, time.Unix(1, 0), "12"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, -1, time.Unix(1, 0), "13"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, -1, time.Unix(1, 0), "14"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, -1, time.Unix(1, 0), "15"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, -1, time.Unix(1, 0), "16"))
 
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, 1, time.Unix(1, 0), "2"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, 1, time.Unix(1, 0), "21"))
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, 1, time.Unix(1, 0), "3"))
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, 1, time.Unix(1, 0), "4"))
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, 1, time.Unix(1, 0), "5"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, -1, time.Unix(1, 0), "12"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, -1, time.Unix(1, 0), "13"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, -1, time.Unix(1, 0), "14"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, -1, time.Unix(1, 0), "15"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, -1, time.Unix(1, 0), "16"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, -1, time.Unix(1, 0), "17"))
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, -1, time.Unix(1, 0), "18"))
 
 	refreshViews(t)
 
@@ -436,6 +457,24 @@ func TestPg_ListPosts(t *testing.T) {
 			ids: []string{"4", "2", "1", "5", "3"},
 		},
 		{
+			name: "dislikes_desc",
+			p: storage.ListPostsParams{
+				SortBy:  storage.DislikesSortType,
+				OrderBy: storage.DescendingOrder,
+				Limit:   100,
+			},
+			ids: []string{"4", "2", "1", "5", "3"},
+		},
+		{
+			name: "pdv_desc",
+			p: storage.ListPostsParams{
+				SortBy:  storage.PDVSortType,
+				OrderBy: storage.DescendingOrder,
+				Limit:   100,
+			},
+			ids: []string{"5", "3", "1", "2", "4"},
+		},
+		{
 			name: "category",
 			p: storage.ListPostsParams{
 				SortBy:   storage.CreatedAtSortType,
@@ -463,7 +502,7 @@ func TestPg_ListPosts(t *testing.T) {
 				Limit:   100,
 				LikedBy: &likedBy,
 			},
-			ids: []string{"4"},
+			ids: []string{"4", "1"},
 		},
 		{
 			name: "followed_by",

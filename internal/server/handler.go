@@ -38,14 +38,16 @@ func (s server) listPosts(w http.ResponseWriter, r *http.Request) {
 	//   in: query
 	//   required: false
 	//   default: created_at
-	//   enum: created_at,likes
+	//   type: string
+	//   enum: [created_at, likes, dislikes, pdv]
 	//   example: likes
 	// - name: order_by
 	//   description: sets sort's direct
 	//   in: query
 	//   required: false
 	//   default: desc
-	//   enum: asc,desc
+	//   type: string
+	//   enum: [asc, desc]
 	//   example: asc
 	// - name: owner
 	//   description: filters posts by owner
@@ -188,7 +190,7 @@ func extractListParamsFromQuery(q url.Values) (*storage.ListPostsParams, error) 
 
 	sortBy := storage.SortType(strings.ToLower(q.Get("sort_by")))
 	switch sortBy {
-	case storage.CreatedAtSortType, storage.LikesSortType:
+	case storage.CreatedAtSortType, storage.LikesSortType, storage.DislikesSortType, storage.PDVSortType:
 		out.SortBy = sortBy
 	case "":
 	default:

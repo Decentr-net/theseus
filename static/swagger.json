@@ -30,25 +30,23 @@
           {
             "maximum": 9,
             "minimum": 1,
-            "type": "integer",
-            "format": "uint8",
-            "example": "4",
-            "x-go-name": "Category",
-            "description": "A category filter",
+            "example": 4,
+            "description": "filters posts by category",
             "name": "category",
             "in": "query"
           },
           {
             "enum": [
               "created_at",
-              "likes"
+              "likes",
+              "dislikes",
+              "pdv"
             ],
             "type": "string",
             "default": "created_at",
             "example": "likes",
-            "x-go-name": "SortBy",
-            "description": "A field for sorting",
-            "name": "sortBy",
+            "description": "sets posts' field to be sorted by",
+            "name": "sort_by",
             "in": "query"
           },
           {
@@ -59,56 +57,44 @@
             "type": "string",
             "default": "desc",
             "example": "asc",
-            "x-go-name": "OrderBy",
-            "description": "A type of order",
-            "name": "orderBy",
+            "description": "sets sort's direct",
+            "name": "order_by",
             "in": "query"
           },
           {
-            "type": "string",
             "example": "decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz",
-            "x-go-name": "Owner",
-            "description": "An owner filter",
+            "description": "filters posts by owner",
             "name": "owner",
             "in": "query"
           },
           {
-            "type": "string",
             "example": "decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz",
-            "x-go-name": "LikedBy",
-            "description": "A `liked by` filter\nIf specified only liked by specified user posts will be returned",
-            "name": "likedBy",
+            "name": "liked_by",
             "in": "query"
           },
           {
             "maximum": 100,
             "minimum": 1,
-            "type": "integer",
-            "format": "uint16",
-            "default": "20",
-            "x-go-name": "Limit",
+            "default": 20,
+            "description": "limits count of returned posts",
             "name": "limit",
             "in": "query"
           },
           {
-            "type": "string",
             "example": "decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz/df870e39-6fcb-11eb-9461-0242ac11000b",
-            "x-go-name": "After",
-            "description": "Specifies post after which posts will be sought\nFull form ID(owner/uuid) should be specified",
+            "description": "sets not-including bound for list by post id(`owner/uuid`)",
             "name": "after",
             "in": "query"
           },
           {
-            "type": "integer",
-            "format": "uint64",
-            "x-go-name": "From",
+            "example": 1613414389,
+            "description": "sets lower datetime bound for list",
             "name": "from",
             "in": "query"
           },
           {
-            "type": "integer",
-            "format": "uint64",
-            "x-go-name": "To",
+            "example": 1613424389,
+            "description": "sets upper datetime bound for list",
             "name": "to",
             "in": "query"
           }
@@ -243,12 +229,12 @@
         },
         "dislikes": {
           "type": "integer",
-          "format": "uint64",
+          "format": "uint32",
           "x-go-name": "Dislikes"
         },
         "likes": {
           "type": "integer",
-          "format": "uint64",
+          "format": "uint32",
           "x-go-name": "Likes"
         },
         "owner": {
@@ -257,7 +243,7 @@
         },
         "pdv": {
           "type": "integer",
-          "format": "uint64",
+          "format": "int64",
           "x-go-name": "PDV"
         },
         "preview_image": {
@@ -316,12 +302,12 @@
       "x-go-package": "github.com/Decentr-net/theseus/internal/server"
     },
     "Stats": {
-      "description": "Key is RFC3999 date, value is uPDV",
+      "description": "Key is RFC3999 date, value is uPDV.",
       "type": "object",
       "title": "Stats ...",
       "additionalProperties": {
         "type": "integer",
-        "format": "uint64"
+        "format": "int64"
       },
       "x-go-package": "github.com/Decentr-net/theseus/internal/server"
     }

@@ -1,10 +1,14 @@
 # Theseus
-![img](https://img.shields.io/docker/cloud/build/Decentr-net/theseus.svg) ![img](https://img.shields.io/github/go-mod/go-version/Decentr-net/theseus) ![img](https://img.shields.io/github/v/tag/Decentr-net/theseus?label=version)
+![img](https://img.shields.io/docker/cloud/build/decentr/theseus.svg) ![img](https://img.shields.io/github/go-mod/go-version/Decentr-net/theseus) ![img](https://img.shields.io/github/v/tag/Decentr-net/theseus?label=version)
 
 Theseus provides Decentr community off-chain functionality.
 
-
 ## Run
+### Import genesis to database
+```
+go run scripts/genesis2db/main.go --genesis.json /path/to/genesis.json --postgres "host=localhost port=5432 user=postgres password=root sslmode=disable" --postgres.migrations "scripts/migrations/postgres"
+```
+
 ### Docker
 #### Local image
 ```
@@ -23,6 +27,7 @@ go run cmd/theseus/main.go \
 ```
 
 ## Parameters
+
 | CLI param         | Environment var          | Default | Required | Description
 |---------------|------------------|---------------|-------|---------------------------------
 | http.host         | HTTP_HOST         | 0.0.0.0  | true | host to bind server
@@ -32,8 +37,11 @@ go run cmd/theseus/main.go \
 | postgres.max_idle_connections    | POSTGRES_MAX_IDLE_CONNECTIONS    | 5 | true | postgres maximal idle connections count
 | postgres.migrations    | POSTGRES_MIGRATIONS    | /migrations/postgres | true | postgres migrations directory
 | blockchain.node   | BLOCKCHAIN_NODE    | http://zeus.testnet.decentr.xyz:26657 | true | decentr node address
+| blockchain.timeout   | BLOCKCHAIN_TIMEOUT    | 5s| true | timeout for requests to blockchain node
+| blockchain.retry_interval   | BLOCKCHAIN_RETRY_INTERVAL    | 2s | true | interval to be waited on error before retry
+| blockchain.last_block_retry_interval   | BLOCKCHAIN_LAST_BLOCK_RETRY_INTERVAL    | 1s | true | duration to be waited when new block isn't produced before retry
 | log.level   | LOG_LEVEL   | info | false | level of logger (debug,info,warn,error)
-| sentry.dsn    | SENTRY_DSN    |  | sentry dsn
+| sentry.dsn    | SENTRY_DSN    |  | false | sentry dsn
 
 ## Development
 ### Makefile
