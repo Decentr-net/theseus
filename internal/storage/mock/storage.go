@@ -66,18 +66,23 @@ func (mr *MockStorageMockRecorder) GetHeight(ctx interface{}) *gomock.Call {
 }
 
 // GetProfiles mocks base method
-func (m *MockStorage) GetProfiles(ctx context.Context, addr []string) ([]*storage.Profile, error) {
+func (m *MockStorage) GetProfiles(ctx context.Context, addr ...string) ([]*storage.Profile, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetProfiles", ctx, addr)
+	varargs := []interface{}{ctx}
+	for _, a := range addr {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetProfiles", varargs...)
 	ret0, _ := ret[0].([]*storage.Profile)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetProfiles indicates an expected call of GetProfiles
-func (mr *MockStorageMockRecorder) GetProfiles(ctx, addr interface{}) *gomock.Call {
+func (mr *MockStorageMockRecorder) GetProfiles(ctx interface{}, addr ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProfiles", reflect.TypeOf((*MockStorage)(nil).GetProfiles), ctx, addr)
+	varargs := append([]interface{}{ctx}, addr...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProfiles", reflect.TypeOf((*MockStorage)(nil).GetProfiles), varargs...)
 }
 
 // SetProfile mocks base method
@@ -180,6 +185,26 @@ func (mr *MockStorageMockRecorder) DeletePost(ctx, id, timestamp, deletedBy inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePost", reflect.TypeOf((*MockStorage)(nil).DeletePost), ctx, id, timestamp, deletedBy)
 }
 
+// GetLikes mocks base method
+func (m *MockStorage) GetLikes(ctx context.Context, likedBy string, id ...storage.PostID) (map[storage.PostID]types.LikeWeight, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, likedBy}
+	for _, a := range id {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetLikes", varargs...)
+	ret0, _ := ret[0].(map[storage.PostID]types.LikeWeight)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLikes indicates an expected call of GetLikes
+func (mr *MockStorageMockRecorder) GetLikes(ctx, likedBy interface{}, id ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, likedBy}, id...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLikes", reflect.TypeOf((*MockStorage)(nil).GetLikes), varargs...)
+}
+
 // SetLike mocks base method
 func (m *MockStorage) SetLike(ctx context.Context, id storage.PostID, weight types.LikeWeight, timestamp time.Time, likeOwner string) error {
 	m.ctrl.T.Helper()
@@ -195,16 +220,21 @@ func (mr *MockStorageMockRecorder) SetLike(ctx, id, weight, timestamp, likeOwner
 }
 
 // GetStats mocks base method
-func (m *MockStorage) GetStats(ctx context.Context, id []storage.PostID) (map[storage.PostID]storage.Stats, error) {
+func (m *MockStorage) GetStats(ctx context.Context, id ...storage.PostID) (map[storage.PostID]storage.Stats, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetStats", ctx, id)
+	varargs := []interface{}{ctx}
+	for _, a := range id {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetStats", varargs...)
 	ret0, _ := ret[0].(map[storage.PostID]storage.Stats)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetStats indicates an expected call of GetStats
-func (mr *MockStorageMockRecorder) GetStats(ctx, id interface{}) *gomock.Call {
+func (mr *MockStorageMockRecorder) GetStats(ctx interface{}, id ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStats", reflect.TypeOf((*MockStorage)(nil).GetStats), ctx, id)
+	varargs := append([]interface{}{ctx}, id...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStats", reflect.TypeOf((*MockStorage)(nil).GetStats), varargs...)
 }

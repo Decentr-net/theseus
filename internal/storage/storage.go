@@ -26,7 +26,7 @@ type Storage interface {
 	WithLockedHeight(ctx context.Context, height uint64, f func(s Storage) error) error
 	GetHeight(ctx context.Context) (uint64, error)
 
-	GetProfiles(ctx context.Context, addr []string) ([]*Profile, error)
+	GetProfiles(ctx context.Context, addr ...string) ([]*Profile, error)
 	SetProfile(ctx context.Context, p *Profile) error
 
 	Follow(ctx context.Context, follower, followee string) error
@@ -36,9 +36,11 @@ type Storage interface {
 	CreatePost(ctx context.Context, p *CreatePostParams) error
 	GetPost(ctx context.Context, id PostID) (*Post, error)
 	DeletePost(ctx context.Context, id PostID, timestamp time.Time, deletedBy string) error
+
+	GetLikes(ctx context.Context, likedBy string, id ...PostID) (map[PostID]community.LikeWeight, error)
 	SetLike(ctx context.Context, id PostID, weight community.LikeWeight, timestamp time.Time, likeOwner string) error
 
-	GetStats(ctx context.Context, id []PostID) (map[PostID]Stats, error)
+	GetStats(ctx context.Context, id ...PostID) (map[PostID]Stats, error)
 }
 
 // SortType ...
@@ -52,7 +54,7 @@ const (
 	// DislikesSortType ...
 	DislikesSortType SortType = "dislikes"
 	// PDVSortType ...
-	PDVSortType SortType = "pdv"
+	PDVSortType SortType = "updv"
 )
 
 // OrderType ...
@@ -107,7 +109,7 @@ type Post struct {
 	CreatedAt    time.Time
 	Likes        uint32
 	Dislikes     uint32
-	PDV          int64
+	UPDV         int64
 }
 
 // Profile ...

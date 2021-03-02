@@ -38,7 +38,7 @@ type postDTO struct {
 	CreatedAt    time.Time `db:"created_at"`
 	Likes        uint32    `db:"likes"`
 	Dislikes     uint32    `db:"dislikes"`
-	PDV          int64     `db:"pdv"`
+	UPDV         int64     `db:"updv"`
 }
 
 type profileDTO struct {
@@ -122,7 +122,7 @@ func (s pg) GetHeight(ctx context.Context) (uint64, error) {
 	return h, nil
 }
 
-func (s pg) GetProfiles(ctx context.Context, addr []string) ([]*storage.Profile, error) {
+func (s pg) GetProfiles(ctx context.Context, addr ...string) ([]*storage.Profile, error) {
 	if len(addr) == 0 {
 		return []*storage.Profile{}, nil
 	}
@@ -215,7 +215,7 @@ func (s pg) GetPost(ctx context.Context, id storage.PostID) (*storage.Post, erro
 	var p postDTO
 
 	if err := sqlx.GetContext(ctx, s.ext, &p, `
-			SELECT owner, uuid, title, category, preview_image, text, created_at, likes, dislikes, pdv
+			SELECT owner, uuid, title, category, preview_image, text, created_at, likes, dislikes, updv
 			FROM calculated_post
 			WHERE owner = $1 AND uuid = $2
 		`,
@@ -237,7 +237,7 @@ func (s pg) GetPost(ctx context.Context, id storage.PostID) (*storage.Post, erro
 		Text:         p.Text,
 		Likes:        p.Likes,
 		Dislikes:     p.Dislikes,
-		PDV:          p.PDV,
+		UPDV:         p.UPDV,
 		CreatedAt:    p.CreatedAt,
 	}, nil
 }
@@ -257,6 +257,43 @@ func (s pg) DeletePost(ctx context.Context, id storage.PostID, timestamp time.Ti
 	}
 
 	return nil
+}
+
+func (s pg) GetLikes(ctx context.Context, likedBy string, id ...storage.PostID) (map[storage.PostID]community.LikeWeight, error) {
+	if len(id) == 0 {
+		return map[storage.PostID]community.LikeWeight{}, nil
+	}
+
+	owners, uuids := make([]string, len(id)), make([]string, len(id))
+	for i := range id {
+		owners[i] = id[i].Owner
+		uuids[i] = id[i].UUID
+	}
+
+	type likesDTO struct {
+		Owner  string `db:"post_owner"`
+		UUID   string `db:"post_uuid"`
+		Weight int8   `db:"weight"`
+	}
+
+	var res []*likesDTO
+
+	if err := sqlx.SelectContext(ctx, s.ext, &res, `
+		WITH clause AS ( SELECT UNNEST($1::TEXT[]) AS post_owner, UNNEST($2::TEXT[]) AS post_uuid )
+		SELECT post_owner, post_uuid, weight FROM clause
+			LEFT JOIN "like" USING(post_owner, post_uuid)
+		WHERE liked_by = $3
+	`, pq.StringArray(owners), pq.StringArray(uuids), likedBy); err != nil {
+		return nil, fmt.Errorf("failed to select: %w", err)
+	}
+
+	out := make(map[storage.PostID]community.LikeWeight, len(res))
+
+	for _, v := range res {
+		out[storage.PostID{Owner: v.Owner, UUID: v.UUID}] = community.LikeWeight(v.Weight)
+	}
+
+	return out, nil
 }
 
 func (s pg) SetLike(ctx context.Context, id storage.PostID, weight community.LikeWeight,
@@ -308,7 +345,7 @@ func (s pg) ListPosts(ctx context.Context, p *storage.ListPostsParams) ([]*stora
 
 	b.WriteString(`
 		SELECT
-			owner, uuid, title, category, preview_image, text, created_at, likes, dislikes, pdv
+			owner, uuid, title, category, preview_image, text, created_at, likes, dislikes, updv
 		FROM calculated_post
 	`)
 
@@ -355,14 +392,14 @@ func (s pg) ListPosts(ctx context.Context, p *storage.ListPostsParams) ([]*stora
 			CreatedAt:    v.CreatedAt,
 			Likes:        v.Likes,
 			Dislikes:     v.Dislikes,
-			PDV:          v.PDV,
+			UPDV:         v.UPDV,
 		}
 	}
 
 	return out, nil
 }
 
-func (s pg) GetStats(ctx context.Context, id []storage.PostID) (map[storage.PostID]storage.Stats, error) {
+func (s pg) GetStats(ctx context.Context, id ...storage.PostID) (map[storage.PostID]storage.Stats, error) {
 	if len(id) == 0 {
 		return map[storage.PostID]storage.Stats{}, nil
 	}

@@ -207,7 +207,7 @@ func TestPg_SetProfile(t *testing.T) {
 	}
 
 	require.NoError(t, s.SetProfile(ctx, &expected))
-	p, err := s.GetProfiles(ctx, []string{expected.Address})
+	p, err := s.GetProfiles(ctx, expected.Address)
 	require.NoError(t, err)
 	require.Len(t, p, 1)
 	require.Equal(t, expected.Address, p[0].Address)
@@ -242,7 +242,7 @@ func TestPg_GetProfiles(t *testing.T) {
 	p.Address = "address_3"
 	require.NoError(t, s.SetProfile(ctx, &p))
 
-	pp, err := s.GetProfiles(ctx, []string{"address", "address_2", "address_4"})
+	pp, err := s.GetProfiles(ctx, "address", "address_2", "address_4")
 	require.NoError(t, err)
 	require.Len(t, pp, 2)
 }
@@ -318,6 +318,23 @@ func TestPg_DeletePost(t *testing.T) {
 	require.Equal(t, "moderator", info.DeletedBy)
 }
 
+func TestPg_GetLiked(t *testing.T) {
+	defer cleanup(t)
+
+	require.NoError(t, s.CreatePost(ctx, &storage.CreatePostParams{UUID: "1", Owner: "1", Category: 1, CreatedAt: time.Now()}))
+	require.NoError(t, s.CreatePost(ctx, &storage.CreatePostParams{UUID: "2", Owner: "2", Category: 2, CreatedAt: time.Now()}))
+
+	require.NoError(t, s.SetLike(ctx, storage.PostID{"1", "1"}, -1, time.Now(), "3"))
+
+	refreshViews(t)
+
+	likes, err := s.GetLikes(ctx, "3", storage.PostID{"1", "1"}, storage.PostID{"2", "2"})
+	require.NoError(t, err)
+	require.Len(t, likes, 1)
+
+	require.Equal(t, community.LikeWeightDown, likes[storage.PostID{"1", "1"}])
+}
+
 func TestPg_SetLike(t *testing.T) {
 	defer cleanup(t)
 
@@ -344,7 +361,7 @@ func TestPg_SetLike(t *testing.T) {
 
 	require.EqualValues(t, 1, post.Likes)
 	require.EqualValues(t, 2, post.Dislikes)
-	require.EqualValues(t, -1, post.PDV)
+	require.EqualValues(t, -1, post.UPDV)
 }
 
 func TestPg_Follow(t *testing.T) {
@@ -573,7 +590,7 @@ func TestPg_GetStats(t *testing.T) {
 
 	refreshViews(t)
 
-	stats, err := s.GetStats(ctx, []storage.PostID{{"1", "1"}, {"2", "2"}})
+	stats, err := s.GetStats(ctx, storage.PostID{"1", "1"}, storage.PostID{"2", "2"})
 	require.NoError(t, err)
 	require.Len(t, stats, 2)
 

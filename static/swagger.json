@@ -38,15 +38,15 @@
           {
             "enum": [
               "created_at",
-              "likes",
-              "dislikes",
+              "likesCount",
+              "dislikesCount",
               "pdv"
             ],
             "type": "string",
-            "default": "created_at",
+            "default": "createdAt",
             "example": "likes",
             "description": "sets posts' field to be sorted by",
-            "name": "sort_by",
+            "name": "sortBy",
             "in": "query"
           },
           {
@@ -58,7 +58,7 @@
             "default": "desc",
             "example": "asc",
             "description": "sets sort's direct",
-            "name": "order_by",
+            "name": "orderBy",
             "in": "query"
           },
           {
@@ -69,7 +69,7 @@
           },
           {
             "example": "decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz",
-            "name": "liked_by",
+            "name": "likedBy",
             "in": "query"
           },
           {
@@ -96,6 +96,12 @@
             "example": 1613424389,
             "description": "sets upper datetime bound for list",
             "name": "to",
+            "in": "query"
+          },
+          {
+            "example": "decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz",
+            "description": "adds liked flag to response",
+            "name": "requestedBy",
             "in": "query"
           }
         ],
@@ -143,6 +149,12 @@
             "name": "uuid",
             "in": "path",
             "required": true
+          },
+          {
+            "example": "decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz",
+            "description": "adds liked flag to response",
+            "name": "requestedBy",
+            "in": "query"
           }
         ],
         "responses": {
@@ -185,6 +197,11 @@
       },
       "x-go-package": "github.com/Decentr-net/theseus/internal/server"
     },
+    "LikeWeight": {
+      "type": "integer",
+      "format": "int8",
+      "x-go-package": "github.com/Decentr-net/decentr/x/community/types"
+    },
     "ListPostsResponse": {
       "type": "object",
       "title": "ListPostsResponse ...",
@@ -222,31 +239,34 @@
         "category": {
           "$ref": "#/definitions/Category"
         },
-        "created_at": {
-          "type": "integer",
-          "format": "uint64",
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
           "x-go-name": "CreatedAt"
         },
-        "dislikes": {
+        "dislikesCount": {
           "type": "integer",
           "format": "uint32",
-          "x-go-name": "Dislikes"
+          "x-go-name": "DislikesCount"
         },
-        "likes": {
+        "liked": {
+          "$ref": "#/definitions/LikeWeight"
+        },
+        "likesCount": {
           "type": "integer",
           "format": "uint32",
-          "x-go-name": "Likes"
+          "x-go-name": "LikesCount"
         },
         "owner": {
           "type": "string",
           "x-go-name": "Owner"
         },
         "pdv": {
-          "type": "integer",
-          "format": "int64",
+          "type": "number",
+          "format": "double",
           "x-go-name": "PDV"
         },
-        "preview_image": {
+        "previewImage": {
           "type": "string",
           "x-go-name": "PreviewImage"
         },
@@ -285,12 +305,7 @@
           "type": "string",
           "x-go-name": "Birthday"
         },
-        "created_at": {
-          "type": "integer",
-          "format": "uint64",
-          "x-go-name": "CreatedAt"
-        },
-        "first_name": {
+        "firstName": {
           "type": "string",
           "x-go-name": "FirstName"
         },
@@ -298,9 +313,14 @@
           "type": "string",
           "x-go-name": "Gender"
         },
-        "last_name": {
+        "lastName": {
           "type": "string",
           "x-go-name": "LastName"
+        },
+        "registeredAt": {
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "RegisteredAt"
         }
       },
       "x-go-package": "github.com/Decentr-net/theseus/internal/server"

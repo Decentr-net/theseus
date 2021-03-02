@@ -33,15 +33,15 @@ func (s server) listPosts(w http.ResponseWriter, r *http.Request) {
 	//   minimum: 1
 	//   maximum: 9
 	//   example: 4
-	// - name: sort_by
+	// - name: sortBy
 	//   description: sets posts' field to be sorted by
 	//   in: query
 	//   required: false
-	//   default: created_at
+	//   default: createdAt
 	//   type: string
-	//   enum: [created_at, likes, dislikes, pdv]
+	//   enum: [created_at, likesCount, dislikesCount, pdv]
 	//   example: likes
-	// - name: order_by
+	// - name: orderBy
 	//   description: sets sort's direct
 	//   in: query
 	//   required: false
@@ -54,7 +54,7 @@ func (s server) listPosts(w http.ResponseWriter, r *http.Request) {
 	//   in: query
 	//   required: false
 	//   example: decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz
-	// - name: liked_by
+	// - name: likedBy
 	//   descriptions: filters posts by one who liked its
 	//   in: query
 	//   required: false
@@ -81,6 +81,11 @@ func (s server) listPosts(w http.ResponseWriter, r *http.Request) {
 	//   in: query
 	//   required: false
 	//   example: 1613424389
+	// - name: requestedBy
+	//   in: query
+	//   description: adds liked flag to response
+	//   required: false
+	//   example: decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz
 	// responses:
 	//   '200':
 	//     description: Posts
@@ -107,19 +112,29 @@ func (s server) listPosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	profiles, err := s.s.GetProfiles(r.Context(), extractProfileIDsFromPosts(posts))
+	profiles, err := s.s.GetProfiles(r.Context(), extractProfileIDsFromPosts(posts)...)
 	if err != nil {
 		writeInternalError(getLogger(r.Context()), w, err.Error())
 		return
 	}
 
-	stats, err := s.s.GetStats(r.Context(), extractPostIDsFromPosts(posts))
+	ids := extractPostIDsFromPosts(posts)
+	stats, err := s.s.GetStats(r.Context(), ids...)
 	if err != nil {
 		writeInternalError(getLogger(r.Context()), w, err.Error())
 		return
 	}
 
-	writeOK(w, http.StatusOK, newListPostsResponse(posts, profiles, stats))
+	var liked map[storage.PostID]community.LikeWeight
+	if requestedBy := r.URL.Query().Get("requestedBy"); requestedBy != "" {
+		liked, err = s.s.GetLikes(r.Context(), requestedBy, ids...)
+		if err != nil {
+			writeInternalError(getLogger(r.Context()), w, err.Error())
+			return
+		}
+	}
+
+	writeOK(w, http.StatusOK, newListPostsResponse(posts, profiles, stats, liked))
 }
 
 func (s server) getPost(w http.ResponseWriter, r *http.Request) {
@@ -139,6 +154,11 @@ func (s server) getPost(w http.ResponseWriter, r *http.Request) {
 	//   in: path
 	//   required: true
 	//   type: string
+	// - name: requestedBy
+	//   in: query
+	//   description: adds liked flag to response
+	//   required: false
+	//   example: decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz
 	// responses:
 	//   '200':
 	//     description: Posts
@@ -160,24 +180,49 @@ func (s server) getPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p, err := s.s.GetPost(r.Context(), storage.PostID{Owner: owner, UUID: uuid})
+	post, err := s.s.GetPost(r.Context(), storage.PostID{Owner: owner, UUID: uuid})
 	if err != nil {
 		writeInternalError(getLogger(r.Context()).WithError(err), w, "failed to get post")
 		return
 	}
 
-	writeOK(w, http.StatusOK, Post{
-		UUID:         p.Owner,
-		Owner:        p.Owner,
-		Title:        p.Title,
-		Category:     p.Category,
-		PreviewImage: p.PreviewImage,
-		Text:         p.Text,
-		Likes:        p.Likes,
-		Dislikes:     p.Dislikes,
-		PDV:          p.PDV,
-		CreatedAt:    uint64(p.CreatedAt.Unix()),
-	})
+	profile, err := s.s.GetProfiles(r.Context(), post.Owner)
+	if err != nil {
+		writeInternalError(getLogger(r.Context()), w, err.Error())
+		return
+	}
+
+	pID := storage.PostID{Owner: post.Owner, UUID: post.UUID}
+	stats, err := s.s.GetStats(r.Context(), pID)
+	if err != nil {
+		writeInternalError(getLogger(r.Context()), w, err.Error())
+		return
+	}
+
+	resp := GetPostResponse{
+		Post: *toAPIPost(post),
+	}
+
+	if len(profile) == 1 {
+		resp.Profile = toAPIProfile(profile[0])
+	}
+
+	if s, ok := stats[pID]; ok {
+		resp.Stats = Stats(s)
+	}
+
+	if requestedBy := r.URL.Query().Get("requestedBy"); requestedBy != "" {
+		liked, err := s.s.GetLikes(r.Context(), requestedBy, pID)
+		if err != nil {
+			writeInternalError(getLogger(r.Context()), w, err.Error())
+			return
+		}
+
+		v := liked[pID]
+		resp.Post.LikeWeight = &v
+	}
+
+	writeOK(w, http.StatusOK, resp)
 }
 
 // nolint: gocyclo
@@ -188,22 +233,28 @@ func extractListParamsFromQuery(q url.Values) (*storage.ListPostsParams, error) 
 		Limit:   defaultLimit,
 	}
 
-	sortBy := storage.SortType(strings.ToLower(q.Get("sort_by")))
+	sortBy := q.Get("sortBy")
 	switch sortBy {
-	case storage.CreatedAtSortType, storage.LikesSortType, storage.DislikesSortType, storage.PDVSortType:
-		out.SortBy = sortBy
+	case "createdAt":
+		out.SortBy = storage.CreatedAtSortType
+	case "likesCount":
+		out.SortBy = storage.LikesSortType
+	case "dislikesCount":
+		out.SortBy = storage.DislikesSortType
+	case "pdv":
+		out.SortBy = storage.PDVSortType
 	case "":
 	default:
-		return nil, fmt.Errorf("%w: invalid sort_by", errInvalidRequest)
+		return nil, fmt.Errorf("%w: invalid sortBy", errInvalidRequest)
 	}
 
-	orderBy := storage.OrderType(strings.ToLower(q.Get("order_by")))
+	orderBy := storage.OrderType(q.Get("orderBy"))
 	switch orderBy {
 	case storage.AscendingOrder, storage.DescendingOrder:
 		out.OrderBy = orderBy
 	case "":
 	default:
-		return nil, fmt.Errorf("%w: invalid order_by", errInvalidRequest)
+		return nil, fmt.Errorf("%w: invalid orderBy", errInvalidRequest)
 	}
 
 	if s := q.Get("category"); s != "" {
@@ -236,7 +287,7 @@ func extractListParamsFromQuery(q url.Values) (*storage.ListPostsParams, error) 
 		out.Owner = &s
 	}
 
-	if s := q.Get("liked_by"); s != "" {
+	if s := q.Get("likedBy"); s != "" {
 		out.LikedBy = &s
 	}
 
@@ -305,37 +356,18 @@ func newListPostsResponse(
 	posts []*storage.Post,
 	profiles []*storage.Profile,
 	stats map[storage.PostID]storage.Stats,
+	liked map[storage.PostID]community.LikeWeight,
 ) ListPostsResponse {
 	out := ListPostsResponse{}
 
-	out.Posts = make([]Post, len(posts))
+	out.Posts = make([]*Post, len(posts))
 	for i, v := range posts {
-		out.Posts[i] = Post{
-			UUID:         v.UUID,
-			Owner:        v.Owner,
-			Title:        v.Title,
-			Category:     v.Category,
-			PreviewImage: v.PreviewImage,
-			Text:         v.Text,
-			Likes:        v.Likes,
-			Dislikes:     v.Dislikes,
-			PDV:          v.PDV,
-			CreatedAt:    uint64(v.CreatedAt.Unix()),
-		}
+		out.Posts[i] = toAPIPost(v)
 	}
 
 	out.Profiles = make(map[string]Profile, len(out.Profiles))
 	for _, v := range profiles {
-		out.Profiles[v.Address] = Profile{
-			Address:   v.Address,
-			FirstName: v.FirstName,
-			LastName:  v.LastName,
-			Bio:       v.Bio,
-			Avatar:    v.Avatar,
-			Gender:    v.Gender,
-			Birthday:  v.Birthday,
-			CreatedAt: uint64(v.CreatedAt.Unix()),
-		}
+		out.Profiles[v.Address] = *toAPIProfile(v)
 	}
 
 	out.Stats = make(map[string]Stats, len(stats))
@@ -344,5 +376,46 @@ func newListPostsResponse(
 		out.Stats[fmt.Sprintf("%s/%s", k.Owner, k.UUID)] = Stats(v)
 	}
 
+	for _, v := range out.Posts {
+		l := liked[storage.PostID{Owner: v.Owner, UUID: v.UUID}]
+		v.LikeWeight = &l
+	}
+
 	return out
+}
+
+func toAPIPost(p *storage.Post) *Post {
+	if p == nil {
+		return nil
+	}
+
+	return &Post{
+		UUID:          p.UUID,
+		Owner:         p.Owner,
+		Title:         p.Title,
+		Category:      p.Category,
+		PreviewImage:  p.PreviewImage,
+		Text:          p.Text,
+		LikesCount:    p.Likes,
+		DislikesCount: p.Dislikes,
+		PDV:           float64(p.UPDV) / 1000000,
+		CreatedAt:     p.CreatedAt.UTC(),
+	}
+}
+
+func toAPIProfile(p *storage.Profile) *Profile {
+	if p == nil {
+		return nil
+	}
+
+	return &Profile{
+		Address:      p.Address,
+		FirstName:    p.FirstName,
+		LastName:     p.LastName,
+		Bio:          p.Bio,
+		Avatar:       p.Avatar,
+		Gender:       p.Gender,
+		Birthday:     p.Birthday,
+		RegisteredAt: p.CreatedAt.UTC(),
+	}
 }
