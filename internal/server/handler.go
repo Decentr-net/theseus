@@ -8,9 +8,11 @@ import (
 	"strconv"
 	"strings"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/go-chi/chi"
 
 	community "github.com/Decentr-net/decentr/x/community/types"
+	"github.com/Decentr-net/decentr/x/utils"
 
 	"github.com/Decentr-net/theseus/internal/storage"
 )
@@ -208,7 +210,7 @@ func (s server) getPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if s, ok := stats[pID]; ok {
-		resp.Stats = Stats(s)
+		resp.Stats = toAPIStats(s)
 	}
 
 	if requestedBy := r.URL.Query().Get("requestedBy"); requestedBy != "" {
@@ -373,7 +375,7 @@ func newListPostsResponse(
 	out.Stats = make(map[string]Stats, len(stats))
 
 	for k, v := range stats {
-		out.Stats[fmt.Sprintf("%s/%s", k.Owner, k.UUID)] = Stats(v)
+		out.Stats[fmt.Sprintf("%s/%s", k.Owner, k.UUID)] = toAPIStats(v)
 	}
 
 	for _, v := range out.Posts {
@@ -398,8 +400,8 @@ func toAPIPost(p *storage.Post) *Post {
 		Text:          p.Text,
 		LikesCount:    p.Likes,
 		DislikesCount: p.Dislikes,
-		PDV:           float64(p.UPDV) / 1000000,
-		CreatedAt:     p.CreatedAt.UTC(),
+		PDV:           utils.TokenToFloat64(sdk.NewInt(p.UPDV)),
+		CreatedAt:     uint64(p.CreatedAt.Unix()),
 	}
 }
 
@@ -416,6 +418,16 @@ func toAPIProfile(p *storage.Profile) *Profile {
 		Avatar:       p.Avatar,
 		Gender:       p.Gender,
 		Birthday:     p.Birthday,
-		RegisteredAt: p.CreatedAt.UTC(),
+		RegisteredAt: uint64(p.CreatedAt.Unix()),
 	}
+}
+
+func toAPIStats(s storage.Stats) Stats {
+	o := make(Stats, len(s))
+
+	for k, v := range s {
+		o[k] = utils.TokenToFloat64(sdk.NewInt(v))
+	}
+
+	return o
 }

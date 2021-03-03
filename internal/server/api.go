@@ -1,8 +1,6 @@
 package server
 
 import (
-	"time"
-
 	community "github.com/Decentr-net/decentr/x/community/types"
 )
 
@@ -44,21 +42,21 @@ type Post struct {
 	DislikesCount uint32                `json:"dislikesCount"`
 	PDV           float64               `json:"pdv"`
 	LikeWeight    *community.LikeWeight `json:"likeWeight,omitempty"`
-	CreatedAt     time.Time             `json:"createdAt"`
+	CreatedAt     uint64                `json:"createdAt"`
 }
 
 // Profile ...
 type Profile struct {
-	Address      string    `json:"address"`
-	FirstName    string    `json:"firstName"`
-	LastName     string    `json:"lastName"`
-	Bio          string    `json:"bio"`
-	Avatar       string    `json:"avatar"`
-	Gender       string    `json:"gender"`
-	Birthday     string    `json:"birthday"`
-	RegisteredAt time.Time `json:"registeredAt"`
+	Address      string `json:"address"`
+	FirstName    string `json:"firstName"`
+	LastName     string `json:"lastName"`
+	Bio          string `json:"bio"`
+	Avatar       string `json:"avatar"`
+	Gender       string `json:"gender"`
+	Birthday     string `json:"birthday"`
+	RegisteredAt uint64 `json:"registeredAt"`
 }
 
 // Stats ...
-// Key is RFC3999 date, value is uPDV.
-type Stats map[string]int64
+// Key is RFC3999 date, value is PDV.
+type Stats map[string]float64

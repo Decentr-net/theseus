@@ -133,9 +133,9 @@ func Test_listPosts(t *testing.T) {
          "text":"text",
          "likesCount":1,
          "dislikesCount":2,
-         "pdv":0.000003,
+         "pdv":0.0000003,
 		 "likeWeight": 0,
-         "createdAt":"1970-01-01T00:01:40Z"
+         "createdAt":100
       },
       {
          "uuid":"uuid2",
@@ -146,9 +146,9 @@ func Test_listPosts(t *testing.T) {
          "text":"text2",
          "likesCount":1,
          "dislikesCount":2,
-         "pdv":0.000003,
+         "pdv":0.0000003,
 		 "likeWeight": 1,
-         "createdAt":"1970-01-01T00:01:40Z"
+         "createdAt":100
       }
    ],
    "profiles":{
@@ -160,7 +160,7 @@ func Test_listPosts(t *testing.T) {
          "avatar":"a",
          "gender":"g",
          "birthday":"b",
-         "registeredAt":"1970-01-01T00:01:40Z"
+         "registeredAt":100
       },
       "owner2":{
          "address":"owner2",
@@ -170,15 +170,15 @@ func Test_listPosts(t *testing.T) {
          "avatar":"a2",
          "gender":"g2",
          "birthday":"b2",
-         "registeredAt":"1970-01-01T00:01:40Z"
+         "registeredAt":100
       }
    },
    "stats":{
       "owner/uuid":{
-         "1970-01-01":1
+         "1970-01-01":0.0000001
       },
       "owner2/uuid2":{
-         "1970-01-01":2
+         "1970-01-01":0.0000002
       }
    }
 }
@@ -258,9 +258,9 @@ func Test_getPost(t *testing.T) {
 		"text":"text",
 		"likesCount":1,
 		"dislikesCount":2,
-		"pdv":0.000003,
+		"pdv":0.0000003,
 		"likeWeight": -1,
-		"createdAt":"1970-01-01T00:50:00Z"
+		"createdAt":3000
 	},
     "profile":{
 		"address":"owner",
@@ -270,10 +270,10 @@ func Test_getPost(t *testing.T) {
 		"avatar":"a",
 		"gender":"g",
 		"birthday":"b",
-		"registeredAt":"1970-01-01T00:50:00Z"
+		"registeredAt":3000
 	},
 	"stats": {
-		"1970-01-01":1
+		"1970-01-01":0.0000001
 	}
 }
 `, w.Body.String())
