@@ -73,24 +73,26 @@ func Test_listPosts(t *testing.T) {
 
 	s.EXPECT().GetProfiles(gomock.Any(), "owner", "owner2").Return([]*storage.Profile{
 		{
-			Address:   "owner",
-			FirstName: "f",
-			LastName:  "l",
-			Bio:       "b",
-			Avatar:    "a",
-			Gender:    "g",
-			Birthday:  "b",
-			CreatedAt: timestamp,
+			Address:    "owner",
+			FirstName:  "f",
+			LastName:   "l",
+			Bio:        "b",
+			Avatar:     "a",
+			Gender:     "g",
+			Birthday:   "b",
+			CreatedAt:  timestamp,
+			PostsCount: 1,
 		},
 		{
-			Address:   "owner2",
-			FirstName: "f2",
-			LastName:  "l2",
-			Bio:       "b2",
-			Avatar:    "a2",
-			Gender:    "g2",
-			Birthday:  "b2",
-			CreatedAt: timestamp,
+			Address:    "owner2",
+			FirstName:  "f2",
+			LastName:   "l2",
+			Bio:        "b2",
+			Avatar:     "a2",
+			Gender:     "g2",
+			Birthday:   "b2",
+			CreatedAt:  timestamp,
+			PostsCount: 4,
 		},
 	}, nil)
 
@@ -133,8 +135,8 @@ func Test_listPosts(t *testing.T) {
          "text":"text",
          "likesCount":1,
          "dislikesCount":2,
-         "pdv":0.0000003,
-		 "likeWeight": 0,
+         "pdv":3e-6,
+         "likeWeight": 0,
          "createdAt":100
       },
       {
@@ -146,7 +148,7 @@ func Test_listPosts(t *testing.T) {
          "text":"text2",
          "likesCount":1,
          "dislikesCount":2,
-         "pdv":0.0000003,
+         "pdv":3e-6,
 		 "likeWeight": 1,
          "createdAt":100
       }
@@ -160,7 +162,8 @@ func Test_listPosts(t *testing.T) {
          "avatar":"a",
          "gender":"g",
          "birthday":"b",
-         "registeredAt":100
+         "registeredAt":100,
+		 "postsCount": 1
       },
       "owner2":{
          "address":"owner2",
@@ -170,15 +173,16 @@ func Test_listPosts(t *testing.T) {
          "avatar":"a2",
          "gender":"g2",
          "birthday":"b2",
-         "registeredAt":100
+         "registeredAt":100,
+		 "postsCount": 4
       }
    },
    "stats":{
       "owner/uuid":{
-         "1970-01-01":0.0000001
+         "1970-01-01":1e-6
       },
       "owner2/uuid2":{
-         "1970-01-01":0.0000002
+         "1970-01-01":2e-6
       }
    }
 }
@@ -213,14 +217,15 @@ func Test_getPost(t *testing.T) {
 
 	srv.EXPECT().GetProfiles(gomock.Any(), "owner").Return([]*storage.Profile{
 		{
-			Address:   "owner",
-			FirstName: "f",
-			LastName:  "l",
-			Bio:       "b",
-			Avatar:    "a",
-			Gender:    "g",
-			Birthday:  "b",
-			CreatedAt: timestamp,
+			Address:    "owner",
+			FirstName:  "f",
+			LastName:   "l",
+			Bio:        "b",
+			Avatar:     "a",
+			Gender:     "g",
+			Birthday:   "b",
+			CreatedAt:  timestamp,
+			PostsCount: 0,
 		},
 	}, nil)
 
@@ -258,7 +263,7 @@ func Test_getPost(t *testing.T) {
 		"text":"text",
 		"likesCount":1,
 		"dislikesCount":2,
-		"pdv":0.0000003,
+		"pdv":3e-6,
 		"likeWeight": -1,
 		"createdAt":3000
 	},
@@ -270,10 +275,11 @@ func Test_getPost(t *testing.T) {
 		"avatar":"a",
 		"gender":"g",
 		"birthday":"b",
-		"registeredAt":3000
+		"registeredAt":3000,
+		"postsCount":0
 	},
 	"stats": {
-		"1970-01-01":0.0000001
+		"1970-01-01":1e-6
 	}
 }
 `, w.Body.String())

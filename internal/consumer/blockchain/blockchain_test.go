@@ -132,7 +132,7 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 				},
 			},
 			expect: func(s *storagemock.MockStorage) {
-				s.EXPECT().SetProfile(gomock.Any(), &storage.Profile{
+				s.EXPECT().SetProfile(gomock.Any(), &storage.SetProfileParams{
 					Address:   owner.String(),
 					FirstName: "first_name",
 					LastName:  "last_name",

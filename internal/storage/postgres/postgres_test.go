@@ -195,7 +195,7 @@ func TestPg_WithLockedHeight(t *testing.T) {
 func TestPg_SetProfile(t *testing.T) {
 	defer cleanup(t)
 
-	expected := storage.Profile{
+	expected := storage.SetProfileParams{
 		Address:   "address",
 		FirstName: "first_name",
 		LastName:  "last_name",
@@ -223,7 +223,7 @@ func TestPg_SetProfile(t *testing.T) {
 func TestPg_GetProfiles(t *testing.T) {
 	defer cleanup(t)
 
-	p := storage.Profile{
+	p := storage.SetProfileParams{
 		Address:   "address",
 		FirstName: "first_name",
 		LastName:  "last_name",
@@ -242,9 +242,17 @@ func TestPg_GetProfiles(t *testing.T) {
 	p.Address = "address_3"
 	require.NoError(t, s.SetProfile(ctx, &p))
 
+	require.NoError(t, s.CreatePost(ctx, &storage.CreatePostParams{
+		Owner: "address_2",
+		UUID:  "123",
+	}))
+
 	pp, err := s.GetProfiles(ctx, "address", "address_2", "address_4")
 	require.NoError(t, err)
 	require.Len(t, pp, 2)
+
+	require.EqualValues(t, 0, pp[0].PostsCount)
+	require.EqualValues(t, 1, pp[1].PostsCount)
 }
 
 func TestPg_CreatePost(t *testing.T) {

@@ -120,7 +120,7 @@ func processMsgSetLike(ctx context.Context, s storage.Storage, timestamp time.Ti
 }
 
 func processMsgSetPublicProfile(ctx context.Context, s storage.Storage, timestamp time.Time, msg *profile.MsgSetPublic) error {
-	return s.SetProfile(ctx, &storage.Profile{
+	return s.SetProfile(ctx, &storage.SetProfileParams{
 		Address:   msg.Owner.String(),
 		FirstName: msg.Public.FirstName,
 		LastName:  msg.Public.LastName,

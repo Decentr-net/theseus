@@ -27,7 +27,7 @@ type Storage interface {
 	GetHeight(ctx context.Context) (uint64, error)
 
 	GetProfiles(ctx context.Context, addr ...string) ([]*Profile, error)
-	SetProfile(ctx context.Context, p *Profile) error
+	SetProfile(ctx context.Context, p *SetProfileParams) error
 
 	Follow(ctx context.Context, follower, followee string) error
 	Unfollow(ctx context.Context, follower, followee string) error
@@ -112,8 +112,8 @@ type Post struct {
 	UPDV         int64
 }
 
-// Profile ...
-type Profile struct {
+// SetProfileParams ...
+type SetProfileParams struct {
 	Address   string
 	FirstName string
 	LastName  string
@@ -122,6 +122,19 @@ type Profile struct {
 	Gender    string
 	Birthday  string
 	CreatedAt time.Time
+}
+
+// Profile ...
+type Profile struct {
+	Address    string
+	FirstName  string
+	LastName   string
+	Bio        string
+	Avatar     string
+	Gender     string
+	Birthday   string
+	CreatedAt  time.Time
+	PostsCount uint16
 }
 
 // Stats is map where key is date in RFC3339 format and value is uPDV count.
