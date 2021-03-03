@@ -51,12 +51,12 @@ CREATE TABLE "like" (
 
 CREATE MATERIALIZED VIEW stats AS
     WITH r AS (
-        SELECT liked_at::DATE as date, post_owner AS owner, post_uuid as uuid, SUM(weight) as pdv
+        SELECT liked_at::DATE as date, post_owner AS owner, post_uuid as uuid, SUM(weight) as updv
         FROM "like"
         WHERE liked_at > NOW() - '1 month'::INTERVAL
         GROUP BY owner, uuid, date
     )
-    SELECT owner, uuid, json_object_agg(date, pdv) AS stats FROM r
+    SELECT owner, uuid, json_object_agg(date, updv) AS stats FROM r
     GROUP BY owner, uuid;
 
 CREATE UNIQUE INDEX stats_pk_idx ON stats(owner, uuid);
@@ -65,7 +65,7 @@ CREATE MATERIALIZED VIEW calculated_post AS
     SELECT owner, uuid, title, category, preview_image, text, post.created_at,
         COALESCE(COUNT(weight) FILTER (WHERE weight = 1), 0) as likes,
         COALESCE(COUNT(weight) FILTER (WHERE weight = -1), 0) AS dislikes,
-        COALESCE(SUM(weight), 0) AS pdv
+        COALESCE(SUM(weight), 0) AS updv
     FROM post
     LEFT JOIN "like" ON post.owner = "like".post_owner AND post.uuid = "like".post_uuid
     WHERE deleted_at IS NULL

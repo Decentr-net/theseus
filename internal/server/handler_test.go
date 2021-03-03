@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	community "github.com/Decentr-net/decentr/x/community/types"
+
 	"github.com/Decentr-net/theseus/internal/storage"
 	"github.com/Decentr-net/theseus/internal/storage/mock"
 )
@@ -20,7 +22,7 @@ import (
 func Test_listPosts(t *testing.T) {
 	timestamp := time.Unix(100, 0)
 
-	query := "category=1&sort_by=likes&order_by=asc&limit=100&after=1234/4321&from=1&to=1000&owner=addr&liked_by=1234"
+	query := "category=1&sortBy=likesCount&orderBy=asc&limit=100&after=1234/4321&from=1&to=1000&owner=addr&likedBy=1234&requestedBy=owner"
 
 	r, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/posts?%s", query), nil)
 	require.NoError(t, err)
@@ -53,7 +55,7 @@ func Test_listPosts(t *testing.T) {
 			CreatedAt:    timestamp,
 			Likes:        1,
 			Dislikes:     2,
-			PDV:          3,
+			UPDV:         3,
 		},
 		{
 			UUID:         "uuid2",
@@ -65,11 +67,11 @@ func Test_listPosts(t *testing.T) {
 			CreatedAt:    timestamp,
 			Likes:        1,
 			Dislikes:     2,
-			PDV:          3,
+			UPDV:         3,
 		},
 	}, nil)
 
-	s.EXPECT().GetProfiles(gomock.Any(), []string{"owner", "owner2"}).Return([]*storage.Profile{
+	s.EXPECT().GetProfiles(gomock.Any(), "owner", "owner2").Return([]*storage.Profile{
 		{
 			Address:   "owner",
 			FirstName: "f",
@@ -91,11 +93,24 @@ func Test_listPosts(t *testing.T) {
 			CreatedAt: timestamp,
 		},
 	}, nil)
-	s.EXPECT().GetStats(gomock.Any(), []storage.PostID{
-		{"owner", "uuid"}, {"owner2", "uuid2"},
-	}).Return(map[storage.PostID]storage.Stats{
+
+	s.EXPECT().GetStats(
+		gomock.Any(),
+		storage.PostID{"owner", "uuid"},
+		storage.PostID{"owner2", "uuid2"},
+	).Return(map[storage.PostID]storage.Stats{
 		{"owner", "uuid"}:   {"1970-01-01": 1},
 		{"owner2", "uuid2"}: {"1970-01-01": 2},
+	}, nil)
+
+	s.EXPECT().GetLikes(
+		gomock.Any(),
+		"owner",
+		storage.PostID{"owner", "uuid"},
+		storage.PostID{"owner2", "uuid2"},
+	).Return(map[storage.PostID]community.LikeWeight{
+		{"owner", "uuid"}:   0,
+		{"owner2", "uuid2"}: 1,
 	}, nil)
 
 	router := chi.NewRouter()
@@ -114,46 +129,48 @@ func Test_listPosts(t *testing.T) {
          "owner":"owner",
          "title":"title",
          "category":1,
-         "preview_image":"preview",
+         "previewImage":"preview",
          "text":"text",
-         "likes":1,
-         "dislikes":2,
-         "pdv":3,
-         "created_at":100
+         "likesCount":1,
+         "dislikesCount":2,
+         "pdv":0.000003,
+		 "likeWeight": 0,
+         "createdAt":"1970-01-01T00:01:40Z"
       },
       {
          "uuid":"uuid2",
          "owner":"owner2",
          "title":"title2",
          "category":2,
-         "preview_image":"preview2",
+         "previewImage":"preview2",
          "text":"text2",
-         "likes":1,
-         "dislikes":2,
-         "pdv":3,
-         "created_at":100
+         "likesCount":1,
+         "dislikesCount":2,
+         "pdv":0.000003,
+		 "likeWeight": 1,
+         "createdAt":"1970-01-01T00:01:40Z"
       }
    ],
    "profiles":{
       "owner":{
          "address":"owner",
-         "first_name":"f",
-         "last_name":"l",
+         "firstName":"f",
+         "lastName":"l",
 		 "bio":"b",
          "avatar":"a",
          "gender":"g",
          "birthday":"b",
-         "created_at":100
+         "registeredAt":"1970-01-01T00:01:40Z"
       },
       "owner2":{
          "address":"owner2",
-         "first_name":"f2",
-         "last_name":"l2",
+         "firstName":"f2",
+         "lastName":"l2",
 		 "bio":"b2",
          "avatar":"a2",
          "gender":"g2",
          "birthday":"b2",
-         "created_at":100
+         "registeredAt":"1970-01-01T00:01:40Z"
       }
    },
    "stats":{
@@ -171,7 +188,7 @@ func Test_listPosts(t *testing.T) {
 func Test_getPost(t *testing.T) {
 	timestamp := time.Unix(3000, 0)
 
-	r, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/posts/%s", "owner/uuid"), nil)
+	r, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/posts/%s?requestedBy=owner", "owner/uuid"), nil)
 	require.NoError(t, err)
 
 	ctrl := gomock.NewController(t)
@@ -191,7 +208,35 @@ func Test_getPost(t *testing.T) {
 		CreatedAt:    timestamp,
 		Likes:        1,
 		Dislikes:     2,
-		PDV:          3,
+		UPDV:         3,
+	}, nil)
+
+	srv.EXPECT().GetProfiles(gomock.Any(), "owner").Return([]*storage.Profile{
+		{
+			Address:   "owner",
+			FirstName: "f",
+			LastName:  "l",
+			Bio:       "b",
+			Avatar:    "a",
+			Gender:    "g",
+			Birthday:  "b",
+			CreatedAt: timestamp,
+		},
+	}, nil)
+
+	srv.EXPECT().GetStats(
+		gomock.Any(),
+		storage.PostID{"owner", "uuid"},
+	).Return(map[storage.PostID]storage.Stats{
+		{"owner", "uuid"}: {"1970-01-01": 1},
+	}, nil)
+
+	srv.EXPECT().GetLikes(
+		gomock.Any(),
+		"owner",
+		storage.PostID{"owner", "uuid"},
+	).Return(map[storage.PostID]community.LikeWeight{
+		{"owner", "uuid"}: -1,
 	}, nil)
 
 	router := chi.NewRouter()
@@ -204,16 +249,32 @@ func Test_getPost(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.JSONEq(t, `
 {
-   "uuid":"owner",
-   "owner":"owner",
-   "title":"title",
-   "category":1,
-   "preview_image":"preview",
-   "text":"text",
-   "likes":1,
-   "dislikes":2,
-   "pdv":3,
-   "created_at":3000
+	"post": {
+		"uuid":"uuid",
+		"owner":"owner",
+		"title":"title",
+		"category":1,
+		"previewImage":"preview",
+		"text":"text",
+		"likesCount":1,
+		"dislikesCount":2,
+		"pdv":0.000003,
+		"likeWeight": -1,
+		"createdAt":"1970-01-01T00:50:00Z"
+	},
+    "profile":{
+		"address":"owner",
+		"firstName":"f",
+		"lastName":"l",
+		"bio":"b",
+		"avatar":"a",
+		"gender":"g",
+		"birthday":"b",
+		"registeredAt":"1970-01-01T00:50:00Z"
+	},
+	"stats": {
+		"1970-01-01":1
+	}
 }
 `, w.Body.String())
 }
