@@ -86,7 +86,7 @@ func (mr *MockStorageMockRecorder) GetProfiles(ctx interface{}, addr ...interfac
 }
 
 // SetProfile mocks base method
-func (m *MockStorage) SetProfile(ctx context.Context, p *storage.Profile) error {
+func (m *MockStorage) SetProfile(ctx context.Context, p *storage.SetProfileParams) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetProfile", ctx, p)
 	ret0, _ := ret[0].(error)

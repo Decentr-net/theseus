@@ -419,6 +419,7 @@ func toAPIProfile(p *storage.Profile) *Profile {
 		Gender:       p.Gender,
 		Birthday:     p.Birthday,
 		RegisteredAt: uint64(p.CreatedAt.Unix()),
+		PostsCount:   p.PostsCount,
 	}
 }
 

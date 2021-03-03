@@ -42,14 +42,15 @@ type postDTO struct {
 }
 
 type profileDTO struct {
-	Address   string    `db:"address"`
-	FirstName string    `db:"first_name"`
-	LastName  string    `db:"last_name"`
-	Bio       string    `db:"bio"`
-	Avatar    string    `db:"avatar"`
-	Gender    string    `db:"gender"`
-	Birthday  string    `db:"birthday"`
-	CreatedAt time.Time `db:"created_at"`
+	Address    string    `db:"address"`
+	FirstName  string    `db:"first_name"`
+	LastName   string    `db:"last_name"`
+	Bio        string    `db:"bio"`
+	Avatar     string    `db:"avatar"`
+	Gender     string    `db:"gender"`
+	Birthday   string    `db:"birthday"`
+	CreatedAt  time.Time `db:"created_at"`
+	PostsCount uint16    `db:"posts_count"`
 }
 
 func (s pg) WithLockedHeight(ctx context.Context, height uint64, f func(s storage.Storage) error) error {
@@ -130,8 +131,17 @@ func (s pg) GetProfiles(ctx context.Context, addr ...string) ([]*storage.Profile
 	addr = stringsUnique(addr)
 
 	query, args, err := sqlx.In(`
-			SELECT address, first_name, last_name, bio, avatar, gender, birthday, created_at FROM profile
+			WITH r AS (
+				SELECT owner AS address, COUNT(*) as posts_count
+				FROM post
+				GROUP BY address
+			) 
+			SELECT
+				address, first_name, last_name, bio, avatar, gender, birthday, created_at, COALESCE(posts_count, 0) AS posts_count
+			FROM profile
+				LEFT JOIN r USING (address)
 			WHERE address IN (?)
+			ORDER BY address
 		`, addr)
 
 	if err != nil {
@@ -147,21 +157,22 @@ func (s pg) GetProfiles(ctx context.Context, addr ...string) ([]*storage.Profile
 	out := make([]*storage.Profile, len(p))
 	for i, v := range p {
 		out[i] = &storage.Profile{
-			Address:   v.Address,
-			FirstName: v.FirstName,
-			LastName:  v.LastName,
-			Bio:       v.Bio,
-			Avatar:    v.Avatar,
-			Gender:    v.Gender,
-			Birthday:  v.Birthday,
-			CreatedAt: v.CreatedAt,
+			Address:    v.Address,
+			FirstName:  v.FirstName,
+			LastName:   v.LastName,
+			Bio:        v.Bio,
+			Avatar:     v.Avatar,
+			Gender:     v.Gender,
+			Birthday:   v.Birthday,
+			CreatedAt:  v.CreatedAt,
+			PostsCount: v.PostsCount,
 		}
 	}
 
 	return out, nil
 }
 
-func (s pg) SetProfile(ctx context.Context, p *storage.Profile) error {
+func (s pg) SetProfile(ctx context.Context, p *storage.SetProfileParams) error {
 	profile := profileDTO{
 		Address:   p.Address,
 		FirstName: p.FirstName,

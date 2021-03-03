@@ -317,6 +317,11 @@
           "type": "string",
           "x-go-name": "LastName"
         },
+        "postsCount": {
+          "type": "integer",
+          "format": "uint16",
+          "x-go-name": "PostsCount"
+        },
         "registeredAt": {
           "type": "integer",
           "format": "uint64",

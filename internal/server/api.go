@@ -55,6 +55,8 @@ type Profile struct {
 	Gender       string `json:"gender"`
 	Birthday     string `json:"birthday"`
 	RegisteredAt uint64 `json:"registeredAt"`
+
+	PostsCount uint16 `json:"postsCount"`
 }
 
 // Stats ...

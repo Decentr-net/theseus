@@ -70,7 +70,7 @@ func main() {
 	logrus.Info("import profiles")
 
 	for i, v := range g.AppState.Profile.ProfileRecords {
-		if err := s.SetProfile(context.Background(), &storage.Profile{
+		if err := s.SetProfile(context.Background(), &storage.SetProfileParams{
 			Address:   v.Owner.String(),
 			FirstName: v.Public.FirstName,
 			LastName:  v.Public.LastName,
