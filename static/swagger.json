@@ -240,8 +240,8 @@
           "$ref": "#/definitions/Category"
         },
         "createdAt": {
-          "type": "string",
-          "format": "date-time",
+          "type": "integer",
+          "format": "uint64",
           "x-go-name": "CreatedAt"
         },
         "dislikesCount": {
@@ -249,7 +249,7 @@
           "format": "uint32",
           "x-go-name": "DislikesCount"
         },
-        "liked": {
+        "likeWeight": {
           "$ref": "#/definitions/LikeWeight"
         },
         "likesCount": {
@@ -318,20 +318,20 @@
           "x-go-name": "LastName"
         },
         "registeredAt": {
-          "type": "string",
-          "format": "date-time",
+          "type": "integer",
+          "format": "uint64",
           "x-go-name": "RegisteredAt"
         }
       },
       "x-go-package": "github.com/Decentr-net/theseus/internal/server"
     },
     "Stats": {
-      "description": "Key is RFC3999 date, value is uPDV.",
+      "description": "Key is RFC3999 date, value is PDV.",
       "type": "object",
       "title": "Stats ...",
       "additionalProperties": {
-        "type": "integer",
-        "format": "int64"
+        "type": "number",
+        "format": "double"
       },
       "x-go-package": "github.com/Decentr-net/theseus/internal/server"
     }
