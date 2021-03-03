@@ -112,7 +112,7 @@ type Post struct {
 	UPDV         int64
 }
 
-// Profile ...
+// SetProfileParams ...
 type SetProfileParams struct {
 	Address   string
 	FirstName string
