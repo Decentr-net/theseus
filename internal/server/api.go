@@ -20,14 +20,14 @@ type ListPostsResponse struct {
 	// Profiles dictionary where key is an address and value is a profile.
 	Profiles map[string]Profile `json:"profiles"`
 	// Posts' statistics dictionary where key is a full form ID (owner/uuid) and value is statistics
-	Stats map[string]Stats `json:"stats"`
+	Stats map[string][]StatsItem `json:"stats"`
 }
 
 // GetPostResponse ...
 type GetPostResponse struct {
-	Post    Post     `json:"post"`
-	Profile *Profile `json:"profile"`
-	Stats   Stats    `json:"stats"`
+	Post    Post        `json:"post"`
+	Profile *Profile    `json:"profile"`
+	Stats   []StatsItem `json:"stats"`
 }
 
 // Post ...
@@ -59,6 +59,9 @@ type Profile struct {
 	PostsCount uint16 `json:"postsCount"`
 }
 
-// Stats ...
+// StatsItem ...
 // Key is RFC3999 date, value is PDV.
-type Stats map[string]float64
+type StatsItem struct {
+	Date  string  `json:"date"`
+	Value float64 `json:"value"`
+}

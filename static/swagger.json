@@ -225,7 +225,10 @@
           "description": "Posts' statistics dictionary where key is a full form ID (owner/uuid) and value is statistics",
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/definitions/Stats"
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/StatsItem"
+            }
           },
           "x-go-name": "Stats"
         }
@@ -330,13 +333,20 @@
       },
       "x-go-package": "github.com/Decentr-net/theseus/internal/server"
     },
-    "Stats": {
+    "StatsItem": {
       "description": "Key is RFC3999 date, value is PDV.",
       "type": "object",
-      "title": "Stats ...",
-      "additionalProperties": {
-        "type": "number",
-        "format": "double"
+      "title": "StatsItem ...",
+      "properties": {
+        "date": {
+          "type": "string",
+          "x-go-name": "Date"
+        },
+        "value": {
+          "type": "number",
+          "format": "double",
+          "x-go-name": "Value"
+        }
       },
       "x-go-package": "github.com/Decentr-net/theseus/internal/server"
     }

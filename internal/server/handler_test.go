@@ -178,12 +178,12 @@ func Test_listPosts(t *testing.T) {
       }
    },
    "stats":{
-      "owner/uuid":{
-         "1970-01-01":1e-6
-      },
-      "owner2/uuid2":{
-         "1970-01-01":2e-6
-      }
+      "owner/uuid":[
+         { "date": "1970-01-01", "value": 1e-6 }
+      ],
+      "owner2/uuid2": [
+         { "date": "1970-01-01", "value": 2e-6 }
+      ]
    }
 }
 	`, w.Body.String())
@@ -278,9 +278,9 @@ func Test_getPost(t *testing.T) {
 		"registeredAt":3000,
 		"postsCount":0
 	},
-	"stats": {
-		"1970-01-01":1e-6
-	}
+	"stats": [
+		{ "date":"1970-01-01", "value":1e-6 }
+	]
 }
 `, w.Body.String())
 }

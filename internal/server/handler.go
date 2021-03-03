@@ -372,7 +372,7 @@ func newListPostsResponse(
 		out.Profiles[v.Address] = *toAPIProfile(v)
 	}
 
-	out.Stats = make(map[string]Stats, len(stats))
+	out.Stats = make(map[string][]StatsItem, len(stats))
 
 	for k, v := range stats {
 		out.Stats[fmt.Sprintf("%s/%s", k.Owner, k.UUID)] = toAPIStats(v)
@@ -423,11 +423,14 @@ func toAPIProfile(p *storage.Profile) *Profile {
 	}
 }
 
-func toAPIStats(s storage.Stats) Stats {
-	o := make(Stats, len(s))
+func toAPIStats(s storage.Stats) []StatsItem {
+	o := make([]StatsItem, 0, len(s))
 
 	for k, v := range s {
-		o[k] = utils.TokenToFloat64(sdk.NewInt(v))
+		o = append(o, StatsItem{
+			Date:  k,
+			Value: utils.TokenToFloat64(sdk.NewInt(v)),
+		})
 	}
 
 	return o
