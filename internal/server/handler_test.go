@@ -135,8 +135,8 @@ func Test_listPosts(t *testing.T) {
          "text":"text",
          "likesCount":1,
          "dislikesCount":2,
-         "pdv":0.0000003,
-		 "likeWeight": 0,
+         "pdv":3e-6,
+         "likeWeight": 0,
          "createdAt":100
       },
       {
@@ -148,7 +148,7 @@ func Test_listPosts(t *testing.T) {
          "text":"text2",
          "likesCount":1,
          "dislikesCount":2,
-         "pdv":0.0000003,
+         "pdv":3e-6,
 		 "likeWeight": 1,
          "createdAt":100
       }
@@ -179,10 +179,10 @@ func Test_listPosts(t *testing.T) {
    },
    "stats":{
       "owner/uuid":{
-         "1970-01-01":0.0000001
+         "1970-01-01":1e-6
       },
       "owner2/uuid2":{
-         "1970-01-01":0.0000002
+         "1970-01-01":2e-6
       }
    }
 }
@@ -263,7 +263,7 @@ func Test_getPost(t *testing.T) {
 		"text":"text",
 		"likesCount":1,
 		"dislikesCount":2,
-		"pdv":0.0000003,
+		"pdv":3e-6,
 		"likeWeight": -1,
 		"createdAt":3000
 	},
@@ -279,7 +279,7 @@ func Test_getPost(t *testing.T) {
 		"postsCount":0
 	},
 	"stats": {
-		"1970-01-01":0.0000001
+		"1970-01-01":1e-6
 	}
 }
 `, w.Body.String())

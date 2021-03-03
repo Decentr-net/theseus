@@ -6,7 +6,7 @@ replace github.com/docker/docker => github.com/docker/engine v0.0.0-201907171610
 
 require (
 	github.com/Decentr-net/ariadne v1.0.0
-	github.com/Decentr-net/decentr v1.1.1-0.20210226075440-e0f8005a82ae
+	github.com/Decentr-net/decentr v1.2.2
 	github.com/Decentr-net/logrus v0.7.1
 	github.com/cosmos/cosmos-sdk v0.39.2
 	github.com/davecgh/go-spew v1.1.1
