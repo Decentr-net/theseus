@@ -11,6 +11,7 @@ import (
 	"github.com/Decentr-net/decentr/app"
 	"github.com/Decentr-net/decentr/x/community"
 	"github.com/Decentr-net/decentr/x/profile"
+	"github.com/Decentr-net/decentr/x/token"
 	"github.com/golang-migrate/migrate/v4"
 	migratep "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -33,6 +34,7 @@ type genesis struct {
 	AppState struct {
 		Community community.GenesisState `json:"community"`
 		Profile   profile.GenesisState   `json:"profile"`
+		Token     token.GenesisState     `json:"token"`
 	} `json:"app_state"`
 }
 
@@ -78,7 +80,6 @@ func main() {
 			Avatar:    v.Public.Avatar,
 			Gender:    string(v.Public.Gender),
 			Birthday:  v.Public.Birthday,
-			CreatedAt: time.Unix(v.Public.RegisteredAt, 0),
 		}); err != nil {
 			logrus.WithError(err).Fatal("failed to put profile into db")
 		}
@@ -88,7 +89,20 @@ func main() {
 		}
 	}
 
+	logrus.Info("import token")
 	i := 0
+	for k, v := range g.AppState.Token.Balances {
+		if err := s.AddPDV(context.Background(), k, v.Int64(), time.Time{}); err != nil {
+			logrus.WithError(err).Fatal("failed to put token into db")
+		}
+
+		i++
+		if i%20 == 0 {
+			logrus.Infof("%d of %d posts imported", i+1, len(g.AppState.Community.Posts))
+		}
+	}
+
+	i = 0
 	logrus.Info("import followings")
 	for follower, v := range g.AppState.Community.Followers {
 		for _, followee := range v {
@@ -112,7 +126,6 @@ func main() {
 			Category:     v.Category,
 			PreviewImage: v.PreviewImage,
 			Text:         v.Text,
-			CreatedAt:    time.Unix(int64(v.CreatedAt), 0),
 		}); err != nil {
 			logrus.WithError(err).Fatal("failed to put post into db")
 		}

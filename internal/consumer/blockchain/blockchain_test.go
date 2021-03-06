@@ -14,6 +14,7 @@ import (
 	"github.com/Decentr-net/ariadne"
 	ariadnemock "github.com/Decentr-net/ariadne/mock"
 	community "github.com/Decentr-net/decentr/x/community/types"
+	pdv "github.com/Decentr-net/decentr/x/pdv/types"
 	profile "github.com/Decentr-net/decentr/x/profile/types"
 
 	"github.com/Decentr-net/theseus/internal/storage"
@@ -94,6 +95,19 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 				Weight:    community.LikeWeightDown,
 			},
 			expect: func(s *storagemock.MockStorage) {
+				// nolint
+				s.EXPECT().GetLikes(gomock.Any(), owner.String(), storage.PostID{
+					Owner: owner.String(),
+					UUID:  "1234",
+				}).Return(map[storage.PostID]community.LikeWeight{
+					storage.PostID{
+						Owner: owner.String(),
+						UUID:  "1234",
+					}: community.LikeWeightUp,
+				}, nil)
+
+				s.EXPECT().AddPDV(gomock.Any(), owner.String(), int64(-2), timestamp).Return(nil)
+
 				s.EXPECT().SetLike(
 					gomock.Any(),
 					storage.PostID{Owner: "decentr1u9slwz3sje8j94ccpwlslflg0506yc8y2ylmtz", UUID: "1234"},
@@ -162,6 +176,26 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 			},
 			expect: func(s *storagemock.MockStorage) {
 				s.EXPECT().Unfollow(gomock.Any(), owner.String(), owner2.String())
+			},
+		},
+		{
+			name: "distribute_rewards",
+			msg: pdv.MsgDistributeRewards{
+				Owner: owner,
+				Rewards: []pdv.Reward{
+					{
+						Receiver: owner,
+						Reward:   100,
+					},
+					{
+						Receiver: owner2,
+						Reward:   10,
+					},
+				},
+			},
+			expect: func(s *storagemock.MockStorage) {
+				s.EXPECT().AddPDV(gomock.Any(), owner.String(), int64(100), timestamp)
+				s.EXPECT().AddPDV(gomock.Any(), owner2.String(), int64(10), timestamp)
 			},
 		},
 	}

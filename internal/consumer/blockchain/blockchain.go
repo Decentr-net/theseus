@@ -12,7 +12,8 @@ import (
 
 	"github.com/Decentr-net/ariadne"
 	"github.com/Decentr-net/decentr/app"
-	"github.com/Decentr-net/decentr/x/community"
+	community "github.com/Decentr-net/decentr/x/community/types"
+	"github.com/Decentr-net/decentr/x/pdv"
 	"github.com/Decentr-net/decentr/x/profile"
 
 	"github.com/Decentr-net/theseus/internal/consumer"
@@ -82,6 +83,8 @@ func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Blo
 					return processMsgFollow(ctx, s, msg)
 				case community.MsgUnfollow:
 					return processMsgUnfollow(ctx, s, msg)
+				case pdv.MsgDistributeRewards:
+					return processDistributeRewards(ctx, s, block.Time, &msg)
 				default:
 					log.WithField("msg", fmt.Sprintf("%s/%s", msg.Route(), msg.Type())).Debug("skip message")
 				}
@@ -116,6 +119,25 @@ func processMsgDeletePost(ctx context.Context, s storage.Storage, timestamp time
 }
 
 func processMsgSetLike(ctx context.Context, s storage.Storage, timestamp time.Time, msg community.MsgSetLike) error {
+	p := storage.PostID{
+		Owner: msg.PostOwner.String(),
+		UUID:  msg.PostUUID,
+	}
+
+	m, err := s.GetLikes(ctx, msg.Owner.String(), p)
+	if err != nil {
+		return fmt.Errorf("failed to get like: %w", err)
+	}
+
+	previousWeight := community.LikeWeightZero
+	if l, ok := m[p]; ok {
+		previousWeight = l
+	}
+
+	if err := s.AddPDV(ctx, msg.PostOwner.String(), int64(msg.Weight-previousWeight), timestamp); err != nil {
+		return fmt.Errorf("failed to add pdv to profile stats: %w", err)
+	}
+
 	return s.SetLike(ctx, storage.PostID{Owner: msg.PostOwner.String(), UUID: msg.PostUUID}, msg.Weight, timestamp, msg.Owner.String())
 }
 
@@ -138,4 +160,14 @@ func processMsgFollow(ctx context.Context, s storage.Storage, msg community.MsgF
 
 func processMsgUnfollow(ctx context.Context, s storage.Storage, msg community.MsgUnfollow) error {
 	return s.Unfollow(ctx, msg.Owner.String(), msg.Whom.String())
+}
+
+func processDistributeRewards(ctx context.Context, s storage.Storage, timestamp time.Time, msg *pdv.MsgDistributeRewards) error {
+	for _, v := range msg.Rewards { // nolint:gocritic
+		if err := s.AddPDV(ctx, v.Receiver.String(), int64(v.Reward), timestamp); err != nil {
+			return fmt.Errorf("failed to add pdv: %w", err)
+		}
+	}
+
+	return nil
 }

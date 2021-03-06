@@ -99,6 +99,10 @@ func (s pg) WithLockedHeight(ctx context.Context, height uint64, f func(s storag
 			return fmt.Errorf("failed to refresh stats view: failed to exec: %w", err)
 		}
 
+		if _, err := tx.ExecContext(ctx, `REFRESH MATERIALIZED VIEW CONCURRENTLY pdv_stats`); err != nil {
+			return fmt.Errorf("failed to refresh pdv_stats view: failed to exec: %w", err)
+		}
+
 		return nil
 	}(pg{ext: tx}); err != nil {
 		if err := tx.Rollback(); err != nil {
@@ -446,6 +450,43 @@ func (s pg) GetStats(ctx context.Context, id ...storage.PostID) (map[storage.Pos
 		}
 
 		out[storage.PostID{Owner: v.Owner, UUID: v.UUID}] = s
+	}
+
+	return out, nil
+}
+
+func (s pg) AddPDV(ctx context.Context, address string, updv int64, timestamp time.Time) error {
+	_, err := s.ext.ExecContext(ctx, `
+		INSERT INTO updv(address, updv, timestamp) VALUES($1, $2, $3)
+	`, address, updv, timestamp)
+
+	if err != nil {
+		return fmt.Errorf("failed to insert: %w", err)
+	}
+
+	return nil
+}
+
+func (s pg) GetProfileStats(ctx context.Context, address string) (storage.Stats, error) {
+	type statsDTO struct {
+		Stats json.RawMessage `db:"stats"`
+	}
+
+	var res statsDTO
+
+	if err := sqlx.GetContext(ctx, s.ext, &res, `
+		SELECT stats FROM pdv_stats
+		WHERE address = $1
+	`, address); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, storage.ErrNotFound
+		}
+		return nil, fmt.Errorf("failed to select: %w", err)
+	}
+
+	var out storage.Stats
+	if err := json.Unmarshal(res.Stats, &out); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal stats: %w", err)
 	}
 
 	return out, nil
