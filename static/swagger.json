@@ -73,6 +73,12 @@
             "in": "query"
           },
           {
+            "example": "decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz",
+            "description": "filters post by owners who followed by followedBy",
+            "name": "followedBy",
+            "in": "query"
+          },
+          {
             "maximum": 100,
             "minimum": 1,
             "default": 20,
@@ -166,6 +172,55 @@
           },
           "400": {
             "description": "bad request",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "500": {
+            "description": "internal server error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/profile/{address}/stats": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Community"
+        ],
+        "summary": "Get post by owner and uuid.",
+        "operationId": "GetProfileStats",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "address",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Posts",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Stats"
+              }
+            }
+          },
+          "400": {
+            "description": "bad request",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "404": {
+            "description": "profile not found",
             "schema": {
               "$ref": "#/definitions/Error"
             }

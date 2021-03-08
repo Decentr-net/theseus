@@ -41,6 +41,9 @@ type Storage interface {
 	SetLike(ctx context.Context, id PostID, weight community.LikeWeight, timestamp time.Time, likeOwner string) error
 
 	GetStats(ctx context.Context, id ...PostID) (map[PostID]Stats, error)
+
+	AddPDV(ctx context.Context, address string, amount int64, timestamp time.Time) error
+	GetProfileStats(ctx context.Context, address string) (Stats, error)
 }
 
 // SortType ...

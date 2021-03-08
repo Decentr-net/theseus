@@ -22,7 +22,7 @@ import (
 func Test_listPosts(t *testing.T) {
 	timestamp := time.Unix(100, 0)
 
-	query := "category=1&sortBy=likesCount&orderBy=asc&limit=100&after=1234/4321&from=1&to=1000&owner=addr&likedBy=1234&requestedBy=owner"
+	query := "category=1&sortBy=likesCount&orderBy=asc&limit=100&after=1234/4321&from=1&to=1000&owner=addr&likedBy=1234&followedBy=111&requestedBy=owner"
 
 	r, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/posts?%s", query), nil)
 	require.NoError(t, err)
@@ -37,6 +37,7 @@ func Test_listPosts(t *testing.T) {
 		assert.EqualValues(t, 1, *p.Category)
 		assert.Equal(t, "addr", *p.Owner)
 		assert.Equal(t, "1234", *p.LikedBy)
+		assert.Equal(t, "111", *p.FollowedBy)
 		assert.EqualValues(t, 100, p.Limit)
 		assert.Equal(t, storage.PostID{
 			Owner: "1234",
@@ -283,4 +284,47 @@ func Test_getPost(t *testing.T) {
 	]
 }
 `, w.Body.String())
+}
+
+func Test_getProfileStats(t *testing.T) {
+	r, err := http.NewRequest(http.MethodGet, "/v1/profiles/owner/stats", nil)
+	require.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	srv := mock.NewMockStorage(ctrl)
+
+	srv.EXPECT().GetProfileStats(gomock.Any(), "owner").Return(storage.Stats{
+		"1970-01-01": 1,
+	}, nil)
+
+	router := chi.NewRouter()
+	s := server{s: srv}
+	router.Get("/v1/profiles/{address}/stats", s.getProfileStats)
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.JSONEq(t, `[{ "date":"1970-01-01", "value":1e-6 }]`, w.Body.String())
+}
+
+func Test_getProfileStats_not_found(t *testing.T) {
+	r, err := http.NewRequest(http.MethodGet, "/v1/profiles/owner/stats", nil)
+	require.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	srv := mock.NewMockStorage(ctrl)
+
+	srv.EXPECT().GetProfileStats(gomock.Any(), "owner").Return(nil, storage.ErrNotFound)
+
+	router := chi.NewRouter()
+	s := server{s: srv}
+	router.Get("/v1/profiles/{address}/stats", s.getProfileStats)
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
 }

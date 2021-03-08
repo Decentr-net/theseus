@@ -61,6 +61,11 @@ func (s server) listPosts(w http.ResponseWriter, r *http.Request) {
 	//   in: query
 	//   required: false
 	//   example: decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz
+	// - name: followedBy
+	//   in: query
+	//   description: filters post by owners who followed by followedBy
+	//   required: false
+	//   example: decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz
 	// - name: limit
 	//   description: limits count of returned posts
 	//   in: query
@@ -227,6 +232,59 @@ func (s server) getPost(w http.ResponseWriter, r *http.Request) {
 	writeOK(w, http.StatusOK, resp)
 }
 
+func (s server) getProfileStats(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation GET /profile/{address}/stats Community GetProfileStats
+	//
+	// Get post by owner and uuid.
+	//
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: address
+	//   in: path
+	//   required: true
+	//   type: string
+	// responses:
+	//   '200':
+	//     description: Posts
+	//     schema:
+	//       type: array
+	//       items:
+	//         "$ref": "#/definitions/Stats"
+	//   '404':
+	//     description: profile not found
+	//     schema:
+	//       "$ref": "#/definitions/Error"
+	//   '400':
+	//     description: bad request
+	//     schema:
+	//       "$ref": "#/definitions/Error"
+	//   '500':
+	//     description: internal server error
+	//     schema:
+	//       "$ref": "#/definitions/Error"
+
+	address := chi.URLParam(r, "address")
+
+	if address == "" {
+		writeError(w, http.StatusBadRequest, "invalid address")
+		return
+	}
+
+	stats, err := s.s.GetProfileStats(r.Context(), address)
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "not found")
+			return
+		}
+		writeInternalError(getLogger(r.Context()).WithError(err), w, "failed to get profile stats")
+		return
+	}
+
+	writeOK(w, http.StatusOK, toAPIStats(stats))
+}
+
 // nolint: gocyclo
 func extractListParamsFromQuery(q url.Values) (*storage.ListPostsParams, error) {
 	out := storage.ListPostsParams{
@@ -291,6 +349,10 @@ func extractListParamsFromQuery(q url.Values) (*storage.ListPostsParams, error) 
 
 	if s := q.Get("likedBy"); s != "" {
 		out.LikedBy = &s
+	}
+
+	if s := q.Get("followedBy"); s != "" {
+		out.FollowedBy = &s
 	}
 
 	if s := q.Get("after"); s != "" {

@@ -19,6 +19,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -124,6 +125,8 @@ func cleanup(t *testing.T) {
 	require.NoError(t, err)
 	_, err = db.ExecContext(ctx, `DELETE FROM post`)
 	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, `DELETE FROM updv`)
+	require.NoError(t, err)
 
 	refreshViews(t)
 }
@@ -132,6 +135,8 @@ func refreshViews(t *testing.T) {
 	_, err := db.ExecContext(ctx, `REFRESH MATERIALIZED VIEW calculated_post`)
 	require.NoError(t, err)
 	_, err = db.ExecContext(ctx, `REFRESH MATERIALIZED VIEW stats`)
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, `REFRESH MATERIALIZED VIEW pdv_stats`)
 	require.NoError(t, err)
 }
 
@@ -600,14 +605,55 @@ func TestPg_GetStats(t *testing.T) {
 
 	stats, err := s.GetStats(ctx, storage.PostID{"1", "1"}, storage.PostID{"2", "2"})
 	require.NoError(t, err)
-	require.Len(t, stats, 2)
 
-	p := stats[storage.PostID{"1", "1"}]
-	require.Len(t, p, 1)
-	require.EqualValues(t, 1, p[today.Format("2006-01-02")])
+	// nolint
+	assert.Equal(t, map[storage.PostID]storage.Stats{
+		storage.PostID{"1", "1"}: {
+			today.Format("2006-01-02"):    2,
+			monthAgo.Format("2006-01-02"): 1,
+		},
+		storage.PostID{"2", "2"}: {
+			today.Format("2006-01-02"):     4,
+			yesterday.Format("2006-01-02"): 2,
+			monthAgo.Format("2006-01-02"):  1,
+		},
+	}, stats)
+}
 
-	p = stats[storage.PostID{"2", "2"}]
-	require.Len(t, p, 2)
-	require.EqualValues(t, 2, p[today.Format("2006-01-02")])
-	require.EqualValues(t, 1, p[yesterday.Format("2006-01-02")])
+func TestPg_AddPDV(t *testing.T) {
+	defer cleanup(t)
+
+	require.NoError(t, s.AddPDV(ctx, "addr", 10, time.Now()))
+}
+
+func TestPg_GetProfileStats(t *testing.T) {
+	defer cleanup(t)
+
+	today := time.Now().UTC()
+	yesterday := today.Add(-time.Hour * 24)
+	monthAgo := today.Add(-time.Hour * 24 * 32)
+	require.NoError(t, s.AddPDV(ctx, "addr2", 5, today))
+	require.NoError(t, s.AddPDV(ctx, "addr", 10, today))
+	require.NoError(t, s.AddPDV(ctx, "addr", 10, yesterday))
+	require.NoError(t, s.AddPDV(ctx, "addr", 10, monthAgo))
+
+	refreshViews(t)
+
+	stats, err := s.GetProfileStats(ctx, "addr")
+	require.NoError(t, err)
+	assert.Equal(t, storage.Stats{
+		today.Format("2006-01-02"):     30,
+		yesterday.Format("2006-01-02"): 20,
+		monthAgo.Format("2006-01-02"):  10,
+	}, stats)
+
+	stats, err = s.GetProfileStats(ctx, "addr2")
+	require.NoError(t, err)
+	assert.Equal(t, storage.Stats{
+		today.Format("2006-01-02"): 5,
+	}, stats)
+
+	_, err = s.GetProfileStats(ctx, "123")
+	require.Error(t, err)
+	assert.True(t, errors.Is(err, storage.ErrNotFound))
 }
