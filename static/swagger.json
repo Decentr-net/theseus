@@ -185,7 +185,7 @@
         }
       }
     },
-    "/profile/{address}/stats": {
+    "/profiles/{address}/stats": {
       "get": {
         "produces": [
           "application/json"

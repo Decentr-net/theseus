@@ -233,7 +233,7 @@ func (s server) getPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s server) getProfileStats(w http.ResponseWriter, r *http.Request) {
-	// swagger:operation GET /profile/{address}/stats Community GetProfileStats
+	// swagger:operation GET /profiles/{address}/stats Community GetProfileStats
 	//
 	// Get pdv stats by address.
 	//
