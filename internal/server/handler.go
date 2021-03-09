@@ -489,6 +489,10 @@ func toAPIStats(s storage.Stats) []StatsItem {
 	o := make([]StatsItem, 0, len(s))
 
 	for k, v := range s {
+		if k == "0001-01-01" {
+			continue
+		}
+
 		o = append(o, StatsItem{
 			Date:  k,
 			Value: utils.TokenToFloat64(sdk.NewInt(v)),
