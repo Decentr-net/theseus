@@ -71,6 +71,8 @@ func main() {
 
 	logrus.Info("import profiles")
 
+	t := time.Now().UTC()
+
 	for i, v := range g.AppState.Profile.ProfileRecords {
 		if err := s.SetProfile(context.Background(), &storage.SetProfileParams{
 			Address:   v.Owner.String(),
@@ -80,6 +82,7 @@ func main() {
 			Avatar:    v.Public.Avatar,
 			Gender:    string(v.Public.Gender),
 			Birthday:  v.Public.Birthday,
+			CreatedAt: t,
 		}); err != nil {
 			logrus.WithError(err).Fatal("failed to put profile into db")
 		}
@@ -92,13 +95,13 @@ func main() {
 	logrus.Info("import token")
 	i := 0
 	for k, v := range g.AppState.Token.Balances {
-		if err := s.AddPDV(context.Background(), k, v.Int64(), time.Time{}); err != nil {
+		if err := s.AddPDV(context.Background(), k, v.Int64(), t); err != nil {
 			logrus.WithError(err).Fatal("failed to put token into db")
 		}
 
 		i++
 		if i%20 == 0 {
-			logrus.Infof("%d of %d posts imported", i+1, len(g.AppState.Community.Posts))
+			logrus.Infof("%d of %d balances imported", i+1, len(g.AppState.Token.Balances))
 		}
 	}
 
@@ -126,6 +129,7 @@ func main() {
 			Category:     v.Category,
 			PreviewImage: v.PreviewImage,
 			Text:         v.Text,
+			CreatedAt:    t,
 		}); err != nil {
 			logrus.WithError(err).Fatal("failed to put post into db")
 		}
@@ -140,7 +144,7 @@ func main() {
 		if err := s.SetLike(context.Background(), storage.PostID{
 			Owner: v.PostOwner.String(),
 			UUID:  v.PostUUID.String(),
-		}, v.Weight, time.Time{}, v.Owner.String()); err != nil {
+		}, v.Weight, t, v.Owner.String()); err != nil {
 			logrus.WithError(err).Fatal("failed to put like into db")
 		}
 
