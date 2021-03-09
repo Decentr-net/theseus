@@ -235,7 +235,7 @@ func (s server) getPost(w http.ResponseWriter, r *http.Request) {
 func (s server) getProfileStats(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation GET /profile/{address}/stats Community GetProfileStats
 	//
-	// Get post by owner and uuid.
+	// Get pdv stats by address.
 	//
 	// ---
 	// produces:
@@ -251,7 +251,7 @@ func (s server) getProfileStats(w http.ResponseWriter, r *http.Request) {
 	//     schema:
 	//       type: array
 	//       items:
-	//         "$ref": "#/definitions/Stats"
+	//         "$ref": "#/definitions/StatsItem"
 	//   '404':
 	//     description: profile not found
 	//     schema:

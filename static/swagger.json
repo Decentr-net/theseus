@@ -12,7 +12,7 @@
   "info": {
     "description": "The Theseus is an off-chain service which provides access to community entities (posts, likes, follows)",
     "title": "Theseus",
-    "version": "0.0.1"
+    "version": "0.0.9"
   },
   "basePath": "/v1",
   "paths": {
@@ -193,7 +193,7 @@
         "tags": [
           "Community"
         ],
-        "summary": "Get post by owner and uuid.",
+        "summary": "Get pdv stats by address.",
         "operationId": "GetProfileStats",
         "parameters": [
           {
@@ -209,7 +209,7 @@
             "schema": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/Stats"
+                "$ref": "#/definitions/StatsItem"
               }
             }
           },
