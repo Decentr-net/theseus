@@ -326,5 +326,6 @@ func Test_getProfileStats_not_found(t *testing.T) {
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, r)
 
-	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.JSONEq(t, `[]`, w.Body.String())
 }

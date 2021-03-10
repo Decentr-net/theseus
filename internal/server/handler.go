@@ -275,7 +275,7 @@ func (s server) getProfileStats(w http.ResponseWriter, r *http.Request) {
 	stats, err := s.s.GetProfileStats(r.Context(), address)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
-			writeError(w, http.StatusNotFound, "not found")
+			writeOK(w, http.StatusOK, []StatsItem{})
 			return
 		}
 		writeInternalError(getLogger(r.Context()).WithError(err), w, "failed to get profile stats")
