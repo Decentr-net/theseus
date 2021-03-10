@@ -505,7 +505,7 @@ func TestPg_ListPosts(t *testing.T) {
 				OrderBy: storage.DescendingOrder,
 				Limit:   100,
 			},
-			ids: []string{"5", "3", "1", "2", "4"},
+			ids: []string{"5", "3", "2", "1", "4"},
 		},
 		{
 			name: "category",
@@ -567,6 +567,26 @@ func TestPg_ListPosts(t *testing.T) {
 				After:   &after,
 			},
 			ids: []string{"3", "4", "5"},
+		},
+		{
+			name: "after_same_value_desc",
+			p: storage.ListPostsParams{
+				SortBy:  storage.PDVSortType,
+				OrderBy: storage.DescendingOrder,
+				Limit:   100,
+				After:   &after,
+			},
+			ids: []string{"1", "4"},
+		},
+		{
+			name: "after_same_value_asc",
+			p: storage.ListPostsParams{
+				SortBy:  storage.PDVSortType,
+				OrderBy: storage.AscendingOrder,
+				Limit:   100,
+				After:   &after,
+			},
+			ids: []string{"3", "5"},
 		},
 	}
 

@@ -384,8 +384,8 @@ func (s pg) ListPosts(ctx context.Context, p *storage.ListPostsParams) ([]*stora
 	}
 
 	b.WriteString(fmt.Sprintf(`
-		ORDER BY %s %s LIMIT ?
-	`, p.SortBy, p.OrderBy))
+		ORDER BY %s %s, owner %s, uuid %s LIMIT ?
+	`, p.SortBy, p.OrderBy, p.OrderBy, p.OrderBy))
 	args = append(args, p.Limit)
 
 	query := s.ext.Rebind(b.String())
@@ -547,10 +547,13 @@ func whereClausesFromListPostsParams(p *storage.ListPostsParams) ([]string, []in
 
 		// nolint: gosec
 		where = append(where, fmt.Sprintf(`
-			%s %s (SELECT %s FROM calculated_post WHERE owner = ? AND uuid = ? FETCH FIRST ROW ONLY)
-		`, p.SortBy, comp, p.SortBy))
+			%s %s (SELECT %s FROM calculated_post WHERE owner = ? AND uuid = ? FETCH FIRST ROW ONLY) OR (
+				%s = (SELECT %s FROM calculated_post WHERE owner = ? AND uuid = ? FETCH FIRST ROW ONLY) AND
+				CONCAT(owner,uuid) %s CONCAT(?::TEXT,?::TEXT)
+			)
+		`, p.SortBy, comp, p.SortBy, p.SortBy, p.SortBy, comp))
 
-		args = append(args, p.After.Owner, p.After.UUID)
+		args = append(args, p.After.Owner, p.After.UUID, p.After.Owner, p.After.UUID, p.After.Owner, p.After.UUID)
 	}
 
 	return where, args
