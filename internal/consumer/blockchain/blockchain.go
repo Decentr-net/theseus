@@ -70,6 +70,8 @@ func (b blockchain) Run(ctx context.Context) error {
 func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Block) error {
 	return func(block ariadne.Block) error {
 		err := b.s.WithLockedHeight(ctx, block.Height, func(s storage.Storage) error {
+			log.WithField("height", block.Height).WithField("txs", len(block.Messages())).Info("processing block")
+
 			for _, msg := range block.Messages() {
 				switch msg := msg.(type) {
 				case profile.MsgSetPublic:
