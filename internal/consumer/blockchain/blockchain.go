@@ -70,7 +70,9 @@ func (b blockchain) Run(ctx context.Context) error {
 func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Block) error {
 	return func(block ariadne.Block) error {
 		err := b.s.WithLockedHeight(ctx, block.Height, func(s storage.Storage) error {
-			log.WithField("height", block.Height).WithField("txs", len(block.Messages())).Info("processing block")
+			log := log.WithField("height", block.Height).WithField("txs", len(block.Txs))
+			log.Info("processing block")
+			log.WithField("msgs", block.Messages()).Debug()
 
 			for _, msg := range block.Messages() {
 				switch msg := msg.(type) {
@@ -98,6 +100,7 @@ func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Blo
 
 		// A block is processed, we shouldn't retry processing
 		if errors.Is(err, storage.ErrRequestedHeightIsTooLow) {
+			log.WithField("height", block.Height).Info("block height is less than storage height")
 			return nil
 		}
 

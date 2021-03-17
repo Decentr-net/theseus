@@ -34,8 +34,9 @@ import (
 
 // nolint:lll,gochecknoglobals
 var opts = struct {
-	Host string `long:"http.host" env:"HTTP_HOST" default:"0.0.0.0" description:"IP to listen on"`
-	Port int    `long:"http.port" env:"HTTP_PORT" default:"8080" description:"port to listen on for insecure connections, defaults to a random value"`
+	Host           string        `long:"http.host" env:"HTTP_HOST" default:"0.0.0.0" description:"IP to listen on"`
+	Port           int           `long:"http.port" env:"HTTP_PORT" default:"8080" description:"port to listen on for insecure connections, defaults to a random value"`
+	RequestTimeout time.Duration `long:"http.request-timeout" env:"HTTP_REQUEST_TIMEOUT" default:"45s" description:"request processing timeout"`
 
 	Postgres                   string `long:"postgres" env:"POSTGRES" default:"host=localhost port=5432 user=postgres password=root sslmode=disable" description:"postgres dsn"`
 	PostgresMaxOpenConnections int    `long:"postgres.max_open_connections" env:"POSTGRES_MAX_OPEN_CONNECTIONS" default:"0" description:"postgres maximal open connections count, 0 means unlimited"`
@@ -97,7 +98,7 @@ func main() {
 
 	s := postgres.New(db)
 
-	server.SetupRouter(s, r)
+	server.SetupRouter(s, r, opts.RequestTimeout)
 	health.SetupRouter(r,
 		health.SubjectPinger("postgres", db.PingContext),
 	)

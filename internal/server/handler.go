@@ -13,6 +13,7 @@ import (
 
 	community "github.com/Decentr-net/decentr/x/community/types"
 	"github.com/Decentr-net/decentr/x/utils"
+	"github.com/Decentr-net/go-api"
 
 	"github.com/Decentr-net/theseus/internal/storage"
 )
@@ -109,26 +110,26 @@ func (s server) listPosts(w http.ResponseWriter, r *http.Request) {
 
 	params, err := extractListParamsFromQuery(r.URL.Query())
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		api.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	posts, err := s.s.ListPosts(r.Context(), params)
 	if err != nil {
-		writeInternalError(getLogger(r.Context()), w, err.Error())
+		api.WriteInternalErrorf(r.Context(), w, "failed to list posts: %s", err.Error())
 		return
 	}
 
 	profiles, err := s.s.GetProfiles(r.Context(), extractProfileIDsFromPosts(posts)...)
 	if err != nil {
-		writeInternalError(getLogger(r.Context()), w, err.Error())
+		api.WriteInternalErrorf(r.Context(), w, "failed to get profiles: %s", err.Error())
 		return
 	}
 
 	ids := extractPostIDsFromPosts(posts)
 	stats, err := s.s.GetStats(r.Context(), ids...)
 	if err != nil {
-		writeInternalError(getLogger(r.Context()), w, err.Error())
+		api.WriteInternalErrorf(r.Context(), w, "failed get stats: %s", err.Error())
 		return
 	}
 
@@ -136,12 +137,12 @@ func (s server) listPosts(w http.ResponseWriter, r *http.Request) {
 	if requestedBy := r.URL.Query().Get("requestedBy"); requestedBy != "" {
 		liked, err = s.s.GetLikes(r.Context(), requestedBy, ids...)
 		if err != nil {
-			writeInternalError(getLogger(r.Context()), w, err.Error())
+			api.WriteInternalErrorf(r.Context(), w, "failed to get likes: %s", err.Error())
 			return
 		}
 	}
 
-	writeOK(w, http.StatusOK, newListPostsResponse(posts, profiles, stats, liked))
+	api.WriteOK(w, http.StatusOK, newListPostsResponse(posts, profiles, stats, liked))
 }
 
 func (s server) getPost(w http.ResponseWriter, r *http.Request) {
@@ -183,26 +184,30 @@ func (s server) getPost(w http.ResponseWriter, r *http.Request) {
 	owner, uuid := chi.URLParam(r, "owner"), chi.URLParam(r, "uuid")
 
 	if owner == "" || uuid == "" {
-		writeError(w, http.StatusBadRequest, "invalid owner or uuid")
+		api.WriteError(w, http.StatusBadRequest, "invalid owner or uuid")
 		return
 	}
 
 	post, err := s.s.GetPost(r.Context(), storage.PostID{Owner: owner, UUID: uuid})
 	if err != nil {
-		writeInternalError(getLogger(r.Context()).WithError(err), w, "failed to get post")
+		if errors.Is(err, storage.ErrNotFound) {
+			api.WriteError(w, http.StatusNotFound, "post not found")
+			return
+		}
+		api.WriteInternalErrorf(r.Context(), w, "failed to get post: %s", err.Error())
 		return
 	}
 
 	profile, err := s.s.GetProfiles(r.Context(), post.Owner)
 	if err != nil {
-		writeInternalError(getLogger(r.Context()), w, err.Error())
+		api.WriteInternalErrorf(r.Context(), w, "failed to get profile: %s", err.Error())
 		return
 	}
 
 	pID := storage.PostID{Owner: post.Owner, UUID: post.UUID}
 	stats, err := s.s.GetStats(r.Context(), pID)
 	if err != nil {
-		writeInternalError(getLogger(r.Context()), w, err.Error())
+		api.WriteInternalErrorf(r.Context(), w, "failed to get stats: %s", err.Error())
 		return
 	}
 
@@ -221,7 +226,7 @@ func (s server) getPost(w http.ResponseWriter, r *http.Request) {
 	if requestedBy := r.URL.Query().Get("requestedBy"); requestedBy != "" {
 		liked, err := s.s.GetLikes(r.Context(), requestedBy, pID)
 		if err != nil {
-			writeInternalError(getLogger(r.Context()), w, err.Error())
+			api.WriteInternalErrorf(r.Context(), w, "failed to get like: %s", err.Error())
 			return
 		}
 
@@ -229,7 +234,7 @@ func (s server) getPost(w http.ResponseWriter, r *http.Request) {
 		resp.Post.LikeWeight = &v
 	}
 
-	writeOK(w, http.StatusOK, resp)
+	api.WriteOK(w, http.StatusOK, resp)
 }
 
 func (s server) getProfileStats(w http.ResponseWriter, r *http.Request) {
@@ -268,21 +273,21 @@ func (s server) getProfileStats(w http.ResponseWriter, r *http.Request) {
 	address := chi.URLParam(r, "address")
 
 	if address == "" {
-		writeError(w, http.StatusBadRequest, "invalid address")
+		api.WriteError(w, http.StatusBadRequest, "invalid address")
 		return
 	}
 
 	stats, err := s.s.GetProfileStats(r.Context(), address)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
-			writeOK(w, http.StatusOK, []StatsItem{})
+			api.WriteOK(w, http.StatusOK, []StatsItem{})
 			return
 		}
-		writeInternalError(getLogger(r.Context()).WithError(err), w, "failed to get profile stats")
+		api.WriteInternalErrorf(r.Context(), w, "failed to get profile stats: %s", err.Error())
 		return
 	}
 
-	writeOK(w, http.StatusOK, toAPIStats(stats))
+	api.WriteOK(w, http.StatusOK, toAPIStats(stats))
 }
 
 // nolint: gocyclo
