@@ -118,7 +118,12 @@ func processMsgCreatePost(ctx context.Context, s storage.Storage, timestamp time
 }
 
 func processMsgDeletePost(ctx context.Context, s storage.Storage, timestamp time.Time, msg community.MsgDeletePost) error {
-	return s.DeletePost(ctx, storage.PostID{Owner: msg.PostOwner.String(), UUID: msg.PostUUID}, timestamp, msg.Owner.String())
+	if err := s.DeletePost(ctx, storage.PostID{Owner: msg.PostOwner.String(), UUID: msg.PostUUID}, timestamp, msg.Owner.String()); err != nil {
+		if !errors.Is(err, storage.ErrNotFound) {
+			return err
+		}
+	}
+	return nil
 }
 
 func processMsgSetLike(ctx context.Context, s storage.Storage, timestamp time.Time, msg community.MsgSetLike) error {
