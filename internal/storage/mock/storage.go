@@ -267,3 +267,18 @@ func (mr *MockStorageMockRecorder) GetProfileStats(ctx, address interface{}) *go
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProfileStats", reflect.TypeOf((*MockStorage)(nil).GetProfileStats), ctx, address)
 }
+
+// GetAllUsersStats mocks base method
+func (m *MockStorage) GetAllUsersStats(ctx context.Context) (*storage.AllUsersStats, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllUsersStats", ctx)
+	ret0, _ := ret[0].(*storage.AllUsersStats)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllUsersStats indicates an expected call of GetAllUsersStats
+func (mr *MockStorageMockRecorder) GetAllUsersStats(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllUsersStats", reflect.TypeOf((*MockStorage)(nil).GetAllUsersStats), ctx)
+}

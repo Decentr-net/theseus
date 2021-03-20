@@ -329,3 +329,27 @@ func Test_getProfileStats_not_found(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.JSONEq(t, `[]`, w.Body.String())
 }
+
+func Test_getAllUsersStats(t *testing.T) {
+	r, err := http.NewRequest(http.MethodGet, "/v1/profiles/stats", nil)
+	require.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	srv := mock.NewMockStorage(ctrl)
+
+	srv.EXPECT().GetAllUsersStats(gomock.Any()).Return(&storage.AllUsersStats{
+		ADV: 1.01,
+		DDV: 2,
+	}, nil)
+
+	router := chi.NewRouter()
+	s := server{s: srv}
+	router.Get("/v1/profiles/stats", s.getAllUsersStats)
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.JSONEq(t, `{ "adv":1.01, "ddv":2 }`, w.Body.String())
+}

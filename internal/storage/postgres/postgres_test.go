@@ -25,6 +25,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	community "github.com/Decentr-net/decentr/x/community/types"
+	"github.com/Decentr-net/decentr/x/utils"
 
 	"github.com/Decentr-net/theseus/internal/storage"
 )
@@ -681,4 +682,26 @@ func TestPg_GetProfileStats(t *testing.T) {
 	_, err = s.GetProfileStats(ctx, "123")
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, storage.ErrNotFound))
+}
+
+func TestPg_GetAllUsersStats(t *testing.T) {
+	defer cleanup(t)
+
+	today := time.Now().UTC()
+	yesterday := today.Add(-time.Hour * 24)
+	monthAgo := today.Add(-time.Hour * 24 * 32)
+	require.NoError(t, s.AddPDV(ctx, "addr", utils.InitialTokenBalance().Int64(), time.Time{}))
+	require.NoError(t, s.AddPDV(ctx, "addr2", utils.InitialTokenBalance().Int64(), time.Time{}))
+	require.NoError(t, s.AddPDV(ctx, "addr2", 5, today))
+	require.NoError(t, s.AddPDV(ctx, "addr2", -15, yesterday))
+	require.NoError(t, s.AddPDV(ctx, "addr", 10, today))
+	require.NoError(t, s.AddPDV(ctx, "addr", 10, yesterday))
+	require.NoError(t, s.AddPDV(ctx, "addr", 10, monthAgo))
+
+	stats, err := s.GetAllUsersStats(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, &storage.AllUsersStats{
+		ADV: 10,
+		DDV: 20,
+	}, stats)
 }

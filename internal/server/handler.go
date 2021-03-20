@@ -238,7 +238,7 @@ func (s server) getPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s server) getProfileStats(w http.ResponseWriter, r *http.Request) {
-	// swagger:operation GET /profiles/{address}/stats Community GetProfileStats
+	// swagger:operation GET /profiles/{address}/stats Profiles GetProfileStats
 	//
 	// Get pdv stats by address.
 	//
@@ -288,6 +288,36 @@ func (s server) getProfileStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.WriteOK(w, http.StatusOK, toAPIStats(stats))
+}
+
+func (s server) getAllUsersStats(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation GET /profiles/stats Profiles GetAllUsersStats
+	//
+	// Returns stats for all users.
+	//
+	// ---
+	// produces:
+	// - application/json
+	// responses:
+	//   '200':
+	//     description: Stats
+	//     schema:
+	//       "$ref": "#/definitions/AllStats"
+	//   '500':
+	//     description: internal server error
+	//     schema:
+	//       "$ref": "#/definitions/Error"
+
+	stats, err := s.s.GetAllUsersStats(r.Context())
+	if err != nil {
+		api.WriteInternalErrorf(r.Context(), w, "failed to get all users stats: %s", err.Error())
+		return
+	}
+
+	api.WriteOK(w, http.StatusOK, AllStats{
+		ADV: stats.ADV,
+		DDV: stats.DDV,
+	})
 }
 
 // nolint: gocyclo

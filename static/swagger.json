@@ -185,13 +185,39 @@
         }
       }
     },
+    "/profiles/stats": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Returns stats for all users.",
+        "operationId": "GetAllUsersStats",
+        "responses": {
+          "200": {
+            "description": "Stats",
+            "schema": {
+              "$ref": "#/definitions/AllStats"
+            }
+          },
+          "500": {
+            "description": "internal server error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
     "/profiles/{address}/stats": {
       "get": {
         "produces": [
           "application/json"
         ],
         "tags": [
-          "Community"
+          "Profiles"
         ],
         "summary": "Get pdv stats by address.",
         "operationId": "GetProfileStats",
@@ -236,6 +262,23 @@
     }
   },
   "definitions": {
+    "AllStats": {
+      "type": "object",
+      "title": "AllStats ...",
+      "properties": {
+        "adv": {
+          "type": "number",
+          "format": "double",
+          "x-go-name": "ADV"
+        },
+        "ddv": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "DDV"
+        }
+      },
+      "x-go-package": "github.com/Decentr-net/theseus/internal/server"
+    },
     "Category": {
       "type": "integer",
       "format": "uint8",
@@ -248,6 +291,26 @@
         "error": {
           "type": "string",
           "x-go-name": "Error"
+        }
+      },
+      "x-go-package": "github.com/Decentr-net/go-api"
+    },
+    "GetPostResponse": {
+      "type": "object",
+      "title": "GetPostResponse ...",
+      "properties": {
+        "post": {
+          "$ref": "#/definitions/Post"
+        },
+        "profile": {
+          "$ref": "#/definitions/Profile"
+        },
+        "stats": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StatsItem"
+          },
+          "x-go-name": "Stats"
         }
       },
       "x-go-package": "github.com/Decentr-net/theseus/internal/server"
