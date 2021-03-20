@@ -251,6 +251,11 @@ func TestPg_GetProfiles(t *testing.T) {
 		Owner: "address_2",
 		UUID:  "123",
 	}))
+	require.NoError(t, s.CreatePost(ctx, &storage.CreatePostParams{
+		Owner: "address_2",
+		UUID:  "124",
+	}))
+	require.NoError(t, s.DeletePost(ctx, storage.PostID{"address_2", "124"}, time.Now(), "address_2"))
 
 	pp, err := s.GetProfiles(ctx, "address", "address_2", "address_4")
 	require.NoError(t, err)

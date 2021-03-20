@@ -138,6 +138,7 @@ func (s pg) GetProfiles(ctx context.Context, addr ...string) ([]*storage.Profile
 			WITH r AS (
 				SELECT owner AS address, COUNT(*) as posts_count
 				FROM post
+				WHERE deleted_at IS NULL
 				GROUP BY address
 			) 
 			SELECT
