@@ -291,9 +291,9 @@ func (s server) getProfileStats(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s server) getAllUsersStats(w http.ResponseWriter, r *http.Request) {
-	// swagger:operation GET /profiles/stats Profiles GetAllUsersStats
+	// swagger:operation GET /profiles/stats Profiles GetDecentrStats
 	//
-	// Returns stats for all users.
+	// Returns decentr stats.
 	//
 	// ---
 	// produces:
@@ -302,19 +302,19 @@ func (s server) getAllUsersStats(w http.ResponseWriter, r *http.Request) {
 	//   '200':
 	//     description: Stats
 	//     schema:
-	//       "$ref": "#/definitions/AllStats"
+	//       "$ref": "#/definitions/DecentrStats"
 	//   '500':
 	//     description: internal server error
 	//     schema:
 	//       "$ref": "#/definitions/Error"
 
-	stats, err := s.s.GetAllUsersStats(r.Context())
+	stats, err := s.s.GetDecentrStats(r.Context())
 	if err != nil {
 		api.WriteInternalErrorf(r.Context(), w, "failed to get all users stats: %s", err.Error())
 		return
 	}
 
-	api.WriteOK(w, http.StatusOK, AllStats{
+	api.WriteOK(w, http.StatusOK, DecentrStats{
 		ADV: stats.ADV,
 		DDV: stats.DDV,
 	})

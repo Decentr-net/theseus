@@ -338,7 +338,7 @@ func Test_getAllUsersStats(t *testing.T) {
 	defer ctrl.Finish()
 	srv := mock.NewMockStorage(ctrl)
 
-	srv.EXPECT().GetAllUsersStats(gomock.Any()).Return(&storage.AllUsersStats{
+	srv.EXPECT().GetDecentrStats(gomock.Any()).Return(&storage.DecentrStats{
 		ADV: 1.01,
 		DDV: 2,
 	}, nil)

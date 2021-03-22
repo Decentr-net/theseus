@@ -54,9 +54,9 @@ type Profile struct {
 	PostsCount uint16 `json:"postsCount"`
 }
 
-// AllStats ...
+// DecentrStats ...
 // swagger:model
-type AllStats struct {
+type DecentrStats struct {
 	ADV float64 `json:"adv"`
 	DDV int64   `json:"ddv"`
 }

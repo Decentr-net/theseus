@@ -698,10 +698,10 @@ func TestPg_GetAllUsersStats(t *testing.T) {
 	require.NoError(t, s.AddPDV(ctx, "addr", 10, yesterday))
 	require.NoError(t, s.AddPDV(ctx, "addr", 10, monthAgo))
 
-	stats, err := s.GetAllUsersStats(ctx)
+	stats, err := s.GetDecentrStats(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, &storage.AllUsersStats{
-		ADV: 10,
+	assert.Equal(t, &storage.DecentrStats{
+		ADV: 1000010,
 		DDV: 20,
 	}, stats)
 }

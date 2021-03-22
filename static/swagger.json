@@ -193,13 +193,13 @@
         "tags": [
           "Profiles"
         ],
-        "summary": "Returns stats for all users.",
-        "operationId": "GetAllUsersStats",
+        "summary": "Returns decentr stats.",
+        "operationId": "GetDecentrStats",
         "responses": {
           "200": {
             "description": "Stats",
             "schema": {
-              "$ref": "#/definitions/AllStats"
+              "$ref": "#/definitions/DecentrStats"
             }
           },
           "500": {
@@ -262,9 +262,14 @@
     }
   },
   "definitions": {
-    "AllStats": {
+    "Category": {
+      "type": "integer",
+      "format": "uint8",
+      "x-go-package": "github.com/Decentr-net/decentr/x/community/types"
+    },
+    "DecentrStats": {
       "type": "object",
-      "title": "AllStats ...",
+      "title": "DecentrStats ...",
       "properties": {
         "adv": {
           "type": "number",
@@ -278,11 +283,6 @@
         }
       },
       "x-go-package": "github.com/Decentr-net/theseus/internal/server"
-    },
-    "Category": {
-      "type": "integer",
-      "format": "uint8",
-      "x-go-package": "github.com/Decentr-net/decentr/x/community/types"
     },
     "Error": {
       "type": "object",

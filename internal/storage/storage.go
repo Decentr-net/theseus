@@ -45,7 +45,7 @@ type Storage interface {
 	AddPDV(ctx context.Context, address string, amount int64, timestamp time.Time) error
 	GetProfileStats(ctx context.Context, address string) (Stats, error)
 
-	GetAllUsersStats(ctx context.Context) (*AllUsersStats, error)
+	GetDecentrStats(ctx context.Context) (*DecentrStats, error)
 }
 
 // SortType ...
@@ -142,8 +142,8 @@ type Profile struct {
 	PostsCount uint16
 }
 
-// AllUsersStats represents all users stats.
-type AllUsersStats struct {
+// DecentrStats represents all users stats.
+type DecentrStats struct {
 	ADV float64 // Average earned pdv
 	DDV int64   // Whole earned pdv
 }

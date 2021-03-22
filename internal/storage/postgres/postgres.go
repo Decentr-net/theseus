@@ -493,7 +493,7 @@ func (s pg) GetProfileStats(ctx context.Context, address string) (storage.Stats,
 	return out, nil
 }
 
-func (s pg) GetAllUsersStats(ctx context.Context) (*storage.AllUsersStats, error) {
+func (s pg) GetDecentrStats(ctx context.Context) (*storage.DecentrStats, error) {
 	var statsDTO struct {
 		DDV int64   `db:"ddv"`
 		ADV float64 `db:"adv"`
@@ -501,15 +501,15 @@ func (s pg) GetAllUsersStats(ctx context.Context) (*storage.AllUsersStats, error
 
 	if err := sqlx.GetContext(ctx, s.ext, &statsDTO, `
 		WITH pdv AS (
-			SELECT address, sum(updv) - 1000000 as pdv from updv
+			SELECT address, SUM(updv) - 1000000 AS earned_pdv, SUM(updv) AS current_pdv from updv
 			group by address
 		)
-		SELECT SUM(pdv) AS ddv, AVG(pdv) AS adv FROM pdv;
+		SELECT SUM(earned_pdv) AS ddv, AVG(current_pdv) AS adv FROM pdv;
 	`); err != nil {
 		return nil, fmt.Errorf("failed to select: %w", err)
 	}
 
-	return &storage.AllUsersStats{
+	return &storage.DecentrStats{
 		ADV: statsDTO.ADV,
 		DDV: statsDTO.DDV,
 	}, nil
