@@ -7,12 +7,6 @@ import (
 const maxLimit = 100
 const defaultLimit = 20
 
-// Error ...
-// swagger:model
-type Error struct {
-	Error string `json:"error"`
-}
-
 // ListPostsResponse ...
 // swagger:model
 type ListPostsResponse struct {
@@ -24,6 +18,7 @@ type ListPostsResponse struct {
 }
 
 // GetPostResponse ...
+// swagger:model
 type GetPostResponse struct {
 	Post    Post        `json:"post"`
 	Profile *Profile    `json:"profile"`
@@ -57,6 +52,13 @@ type Profile struct {
 	RegisteredAt uint64 `json:"registeredAt"`
 
 	PostsCount uint16 `json:"postsCount"`
+}
+
+// DecentrStats ...
+// swagger:model
+type DecentrStats struct {
+	ADV float64 `json:"adv"`
+	DDV int64   `json:"ddv"`
 }
 
 // StatsItem ...

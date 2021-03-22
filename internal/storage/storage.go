@@ -44,6 +44,8 @@ type Storage interface {
 
 	AddPDV(ctx context.Context, address string, amount int64, timestamp time.Time) error
 	GetProfileStats(ctx context.Context, address string) (Stats, error)
+
+	GetDecentrStats(ctx context.Context) (*DecentrStats, error)
 }
 
 // SortType ...
@@ -138,6 +140,12 @@ type Profile struct {
 	Birthday   string
 	CreatedAt  time.Time
 	PostsCount uint16
+}
+
+// DecentrStats represents all users stats.
+type DecentrStats struct {
+	ADV float64 // Average earned pdv
+	DDV int64   // Whole earned pdv
 }
 
 // Stats is map where key is date in RFC3339 format and value is uPDV count.

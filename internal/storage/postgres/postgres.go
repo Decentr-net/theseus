@@ -493,6 +493,28 @@ func (s pg) GetProfileStats(ctx context.Context, address string) (storage.Stats,
 	return out, nil
 }
 
+func (s pg) GetDecentrStats(ctx context.Context) (*storage.DecentrStats, error) {
+	var statsDTO struct {
+		DDV int64   `db:"ddv"`
+		ADV float64 `db:"adv"`
+	}
+
+	if err := sqlx.GetContext(ctx, s.ext, &statsDTO, `
+		WITH pdv AS (
+			SELECT address, SUM(updv) - 1000000 AS earned_pdv, SUM(updv) AS current_pdv from updv
+			group by address
+		)
+		SELECT SUM(earned_pdv) AS ddv, AVG(current_pdv) AS adv FROM pdv;
+	`); err != nil {
+		return nil, fmt.Errorf("failed to select: %w", err)
+	}
+
+	return &storage.DecentrStats{
+		ADV: statsDTO.ADV,
+		DDV: statsDTO.DDV,
+	}, nil
+}
+
 // New creates new instance of pg.
 func New(db *sql.DB) storage.Storage {
 	return pg{
