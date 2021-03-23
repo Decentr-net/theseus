@@ -54,7 +54,7 @@ func SetupRouter(s storage.Storage, r chi.Router, timeout time.Duration) {
 	r.Route("/v1", func(r chi.Router) {
 		r.Get("/posts", srv.listPosts)
 		r.Get("/posts/{owner}/{uuid}", srv.getPost)
-		r.Get("/profiles/stats", srv.getAllUsersStats)
+		r.Get("/profiles/stats", srv.getDecentrStats)
 		r.Get("/profiles/{address}/stats", srv.getProfileStats)
 	})
 }
