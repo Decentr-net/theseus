@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi"
 
 	community "github.com/Decentr-net/decentr/x/community/types"
+	token "github.com/Decentr-net/decentr/x/token/types"
 	"github.com/Decentr-net/decentr/x/utils"
 	"github.com/Decentr-net/go-api"
 
@@ -290,7 +291,7 @@ func (s server) getProfileStats(w http.ResponseWriter, r *http.Request) {
 	api.WriteOK(w, http.StatusOK, toAPIStats(stats))
 }
 
-func (s server) getAllUsersStats(w http.ResponseWriter, r *http.Request) {
+func (s server) getDecentrStats(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation GET /profiles/stats Profiles GetDecentrStats
 	//
 	// Returns decentr stats.
@@ -315,8 +316,8 @@ func (s server) getAllUsersStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.WriteOK(w, http.StatusOK, DecentrStats{
-		ADV: stats.ADV,
-		DDV: stats.DDV,
+		ADV: stats.ADV / float64(token.Denominator),
+		DDV: stats.DDV / token.Denominator,
 	})
 }
 

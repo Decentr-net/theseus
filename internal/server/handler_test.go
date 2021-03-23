@@ -330,7 +330,7 @@ func Test_getProfileStats_not_found(t *testing.T) {
 	assert.JSONEq(t, `[]`, w.Body.String())
 }
 
-func Test_getAllUsersStats(t *testing.T) {
+func Test_getDecentrStats(t *testing.T) {
 	r, err := http.NewRequest(http.MethodGet, "/v1/profiles/stats", nil)
 	require.NoError(t, err)
 
@@ -339,13 +339,13 @@ func Test_getAllUsersStats(t *testing.T) {
 	srv := mock.NewMockStorage(ctrl)
 
 	srv.EXPECT().GetDecentrStats(gomock.Any()).Return(&storage.DecentrStats{
-		ADV: 1.01,
-		DDV: 2,
+		ADV: 1010000,
+		DDV: 2000000,
 	}, nil)
 
 	router := chi.NewRouter()
 	s := server{s: srv}
-	router.Get("/v1/profiles/stats", s.getAllUsersStats)
+	router.Get("/v1/profiles/stats", s.getDecentrStats)
 
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, r)
