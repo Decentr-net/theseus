@@ -317,7 +317,7 @@ func (s server) getDecentrStats(w http.ResponseWriter, r *http.Request) {
 
 	api.WriteOK(w, http.StatusOK, DecentrStats{
 		ADV: stats.ADV / float64(token.Denominator),
-		DDV: stats.DDV / token.Denominator,
+		DDV: float64(stats.DDV) / float64(token.Denominator),
 	})
 }
 

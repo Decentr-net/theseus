@@ -277,8 +277,8 @@
           "x-go-name": "ADV"
         },
         "ddv": {
-          "type": "integer",
-          "format": "int64",
+          "type": "number",
+          "format": "double",
           "x-go-name": "DDV"
         }
       },

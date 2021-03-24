@@ -58,7 +58,7 @@ type Profile struct {
 // swagger:model
 type DecentrStats struct {
 	ADV float64 `json:"adv"`
-	DDV int64   `json:"ddv"`
+	DDV float64 `json:"ddv"`
 }
 
 // StatsItem ...
