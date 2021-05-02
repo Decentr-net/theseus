@@ -41,7 +41,7 @@ type postDTO struct {
 	UPDV         int64     `db:"updv"`
 }
 
-func (s pg) WithLockedHeight(ctx context.Context, height uint64, f func(s storage.Storage) error) error {
+func (s pg) InTx(ctx context.Context, f func(s storage.Storage) error) error {
 	db, ok := s.ext.(*sqlx.DB)
 	if !ok {
 		return errBeginCalledWithinTx
@@ -53,42 +53,8 @@ func (s pg) WithLockedHeight(ctx context.Context, height uint64, f func(s storag
 	}
 
 	if err := func(s storage.Storage) error {
-		// WithLockedHeight should be blocking method
-		if _, err := tx.ExecContext(ctx, `LOCK TABLE height IN ACCESS EXCLUSIVE MODE`); err != nil {
-			return fmt.Errorf("failed to lock height table: %w", err)
-		}
-
-		h, err := s.GetHeight(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to get height: %w", err)
-		}
-
-		if height > h+1 {
-			return fmt.Errorf("%w expected_height=%d", storage.ErrRequestedHeightIsTooHigh, h+1)
-		}
-
-		if height < h+1 {
-			return fmt.Errorf("%w expected_height=%d", storage.ErrRequestedHeightIsTooLow, h+1)
-		}
-
 		if err := f(s); err != nil {
 			return err
-		}
-
-		if _, err := tx.ExecContext(ctx, `UPDATE height SET height=$1`, height); err != nil {
-			return fmt.Errorf("failed to save height: failed to exec: %w", err)
-		}
-
-		if _, err := tx.ExecContext(ctx, `REFRESH MATERIALIZED VIEW CONCURRENTLY calculated_post`); err != nil {
-			return fmt.Errorf("failed to refresh calculated_post view: failed to exec: %w", err)
-		}
-
-		if _, err := tx.ExecContext(ctx, `REFRESH MATERIALIZED VIEW CONCURRENTLY stats`); err != nil {
-			return fmt.Errorf("failed to refresh stats view: failed to exec: %w", err)
-		}
-
-		if _, err := tx.ExecContext(ctx, `REFRESH MATERIALIZED VIEW CONCURRENTLY pdv_stats`); err != nil {
-			return fmt.Errorf("failed to refresh pdv_stats view: failed to exec: %w", err)
 		}
 
 		return nil
@@ -113,6 +79,30 @@ func (s pg) GetHeight(ctx context.Context) (uint64, error) {
 	}
 
 	return h, nil
+}
+
+func (s pg) SetHeight(ctx context.Context, height uint64) error {
+	if _, err := s.ext.ExecContext(ctx, `UPDATE height SET height = $1`, height); err != nil {
+		return fmt.Errorf("failed to update: %w", err)
+	}
+
+	return nil
+}
+
+func (s pg) RefreshViews(ctx context.Context) error {
+	if _, err := s.ext.ExecContext(ctx, `REFRESH MATERIALIZED VIEW CONCURRENTLY calculated_post`); err != nil {
+		return fmt.Errorf("failed to refresh calculated_post view: failed to exec: %w", err)
+	}
+
+	if _, err := s.ext.ExecContext(ctx, `REFRESH MATERIALIZED VIEW CONCURRENTLY stats`); err != nil {
+		return fmt.Errorf("failed to refresh stats view: failed to exec: %w", err)
+	}
+
+	if _, err := s.ext.ExecContext(ctx, `REFRESH MATERIALIZED VIEW CONCURRENTLY pdv_stats`); err != nil {
+		return fmt.Errorf("failed to refresh pdv_stats view: failed to exec: %w", err)
+	}
+
+	return nil
 }
 
 func (s pg) GetProfileStats(ctx context.Context, addr ...string) ([]*storage.ProfileStats, error) {

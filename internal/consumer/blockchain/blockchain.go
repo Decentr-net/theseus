@@ -67,40 +67,46 @@ func (b blockchain) Run(ctx context.Context) error {
 
 func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Block) error {
 	return func(block ariadne.Block) error {
-		err := b.s.WithLockedHeight(ctx, block.Height, func(s storage.Storage) error {
+		return b.s.InTx(ctx, func(s storage.Storage) error {
 			log := log.WithField("height", block.Height).WithField("txs", len(block.Txs))
 			log.Info("processing block")
 			log.WithField("msgs", block.Messages()).Debug()
 
 			for _, msg := range block.Messages() {
+				var err error
+
 				switch msg := msg.(type) {
 				case community.MsgCreatePost:
-					return processMsgCreatePost(ctx, s, block.Time, &msg)
+					err = processMsgCreatePost(ctx, s, block.Time, &msg)
 				case community.MsgDeletePost:
-					return processMsgDeletePost(ctx, s, block.Time, msg)
+					err = processMsgDeletePost(ctx, s, block.Time, msg)
 				case community.MsgSetLike:
-					return processMsgSetLike(ctx, s, block.Time, msg)
+					err = processMsgSetLike(ctx, s, block.Time, msg)
 				case community.MsgFollow:
-					return processMsgFollow(ctx, s, msg)
+					err = processMsgFollow(ctx, s, msg)
 				case community.MsgUnfollow:
-					return processMsgUnfollow(ctx, s, msg)
+					err = processMsgUnfollow(ctx, s, msg)
 				case pdv.MsgDistributeRewards:
-					return processDistributeRewards(ctx, s, block.Time, &msg)
+					err = processDistributeRewards(ctx, s, block.Time, &msg)
 				default:
 					log.WithField("msg", fmt.Sprintf("%s/%s", msg.Route(), msg.Type())).Debug("skip message")
 				}
+
+				if err != nil {
+					return fmt.Errorf("failed to process msg: %w", err)
+				}
+			}
+
+			if err := s.SetHeight(ctx, block.Height); err != nil {
+				return fmt.Errorf("failed to set height: %w", err)
+			}
+
+			if err := s.RefreshViews(ctx); err != nil {
+				return fmt.Errorf("failed to refresh views: %w", err)
 			}
 
 			return nil
 		})
-
-		// A block is processed, we shouldn't retry processing
-		if errors.Is(err, storage.ErrRequestedHeightIsTooLow) {
-			log.WithField("height", block.Height).Info("block height is less than storage height")
-			return nil
-		}
-
-		return err
 	}
 }
 

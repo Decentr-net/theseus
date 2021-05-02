@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sync"
 	"testing"
 	"time"
 
@@ -129,16 +128,7 @@ func cleanup(t *testing.T) {
 	_, err = db.ExecContext(ctx, `DELETE FROM updv`)
 	require.NoError(t, err)
 
-	refreshViews(t)
-}
-
-func refreshViews(t *testing.T) {
-	_, err := db.ExecContext(ctx, `REFRESH MATERIALIZED VIEW calculated_post`)
-	require.NoError(t, err)
-	_, err = db.ExecContext(ctx, `REFRESH MATERIALIZED VIEW stats`)
-	require.NoError(t, err)
-	_, err = db.ExecContext(ctx, `REFRESH MATERIALIZED VIEW pdv_stats`)
-	require.NoError(t, err)
+	require.NoError(t, s.RefreshViews(ctx))
 }
 
 func TestPg_GetHeight(t *testing.T) {
@@ -149,53 +139,27 @@ func TestPg_GetHeight(t *testing.T) {
 	require.EqualValues(t, 0, h)
 }
 
-func TestPg_OnLockedHeight_Errors(t *testing.T) {
+func TestPg_SetHeight(t *testing.T) {
 	defer cleanup(t)
-	require.True(t, errors.Is(s.WithLockedHeight(context.Background(), 0, func(locked storage.Storage) error { return nil }), storage.ErrRequestedHeightIsTooLow))
-	require.True(t, errors.Is(s.WithLockedHeight(context.Background(), 2, func(locked storage.Storage) error { return nil }), storage.ErrRequestedHeightIsTooHigh))
+
+	require.NoError(t, s.SetHeight(ctx, 10))
+
+	h, err := s.GetHeight(context.Background())
+	require.NoError(t, err)
+	require.EqualValues(t, 10, h)
 }
 
-func TestPg_WithLockedHeight(t *testing.T) {
+func TestPg_InTx(t *testing.T) {
 	defer cleanup(t)
 
-	mu := sync.Mutex{}
-
-	// Lock mutex to be sure if routine is started
-	mu.Lock()
-	go require.NoError(t, s.WithLockedHeight(context.Background(), 1, func(locked storage.Storage) error {
-		mu.Unlock()                        // allow main routine execution
-		time.Sleep(time.Millisecond * 500) // next OnLockHeight or GetHeight should wait
-
-		h, err := locked.GetHeight(context.Background())
-		require.NoError(t, err)
-		require.EqualValues(t, 0, h)
-
+	require.NoError(t, s.InTx(context.Background(), func(tx storage.Storage) error {
+		require.NoError(t, tx.SetHeight(ctx, 1))
 		return nil
 	}))
 
-	mu.Lock() // there we lock to prevent execution continuing
-
-	go func() {
-		mu.Lock()         // wait until second WithLockedHeight will start
-		defer mu.Unlock() // allow test to finish
-
-		h, err := s.GetHeight(context.Background())
-		require.NoError(t, err)
-		require.EqualValues(t, 2, h)
-	}()
-
-	require.NoError(t, s.WithLockedHeight(context.Background(), 2, func(locked storage.Storage) error {
-		mu.Unlock()                        // allow second routine to start
-		time.Sleep(time.Millisecond * 500) // to be sure that second routine is started and GetHeight is called
-
-		h, err := locked.GetHeight(context.Background())
-		require.NoError(t, err)
-		require.EqualValues(t, 1, h)
-
-		return nil
-	}))
-
-	mu.Lock() // do not finish until second routine will finish
+	h, err := s.GetHeight(context.Background())
+	require.NoError(t, err)
+	require.EqualValues(t, 1, h)
 }
 
 func TestPg_GetProfileStats(t *testing.T) {
@@ -221,7 +185,7 @@ func TestPg_GetProfileStats(t *testing.T) {
 	require.NoError(t, s.AddPDV(ctx, "address", 10, now))
 	require.NoError(t, s.AddPDV(ctx, "address_1", 10, yersterday))
 
-	refreshViews(t)
+	require.NoError(t, s.RefreshViews(ctx))
 
 	pp, err := s.GetProfileStats(ctx, "address", "address_1", "address_2")
 	require.NoError(t, err)
@@ -265,7 +229,7 @@ func TestPg_CreatePost(t *testing.T) {
 	}
 
 	require.NoError(t, s.CreatePost(ctx, &expected))
-	refreshViews(t)
+	require.NoError(t, s.RefreshViews(ctx))
 
 	p, err := s.GetPost(ctx, storage.PostID{expected.Owner, expected.UUID})
 	require.NoError(t, err)
@@ -301,10 +265,10 @@ func TestPg_DeletePost(t *testing.T) {
 	}
 
 	require.NoError(t, s.CreatePost(ctx, &p))
-	refreshViews(t)
+	require.NoError(t, s.RefreshViews(ctx))
 
 	require.NoError(t, s.DeletePost(ctx, storage.PostID{p.Owner, p.UUID}, p.CreatedAt, "moderator"))
-	refreshViews(t)
+	require.NoError(t, s.RefreshViews(ctx))
 
 	_, err := s.GetPost(ctx, storage.PostID{p.Owner, p.UUID})
 	require.Equal(t, storage.ErrNotFound, err)
@@ -330,7 +294,7 @@ func TestPg_GetLiked(t *testing.T) {
 
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"1", "1"}, -1, time.Now(), "3"))
 
-	refreshViews(t)
+	require.NoError(t, s.RefreshViews(ctx))
 
 	likes, err := s.GetLikes(ctx, "3", storage.PostID{"1", "1"}, storage.PostID{"2", "2"})
 	require.NoError(t, err)
@@ -358,7 +322,7 @@ func TestPg_SetLike(t *testing.T) {
 	require.NoError(t, s.SetLike(ctx, storage.PostID{p.Owner, p.UUID}, 1, p.CreatedAt, "liker"))
 	require.NoError(t, s.SetLike(ctx, storage.PostID{p.Owner, p.UUID}, -1, p.CreatedAt, "liker2"))
 	require.NoError(t, s.SetLike(ctx, storage.PostID{p.Owner, p.UUID}, -1, p.CreatedAt, "liker3"))
-	refreshViews(t)
+	require.NoError(t, s.RefreshViews(ctx))
 
 	post, err := s.GetPost(ctx, storage.PostID{p.Owner, p.UUID})
 	require.NoError(t, err)
@@ -447,7 +411,7 @@ func TestPg_ListPosts(t *testing.T) {
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, -1, time.Unix(1, 0), "17"))
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, -1, time.Unix(1, 0), "18"))
 
-	refreshViews(t)
+	require.NoError(t, s.RefreshViews(ctx))
 
 	cat := community.Category(3)
 	owner := "2"
@@ -612,7 +576,7 @@ func TestPg_GetStats(t *testing.T) {
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, 1, yesterday, "3"))
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, 1, monthAgo, "4"))
 
-	refreshViews(t)
+	require.NoError(t, s.RefreshViews(ctx))
 
 	stats, err := s.GetPostStats(ctx, storage.PostID{"1", "1"}, storage.PostID{"2", "2"})
 	require.NoError(t, err)

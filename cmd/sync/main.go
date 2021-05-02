@@ -5,13 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/go-chi/chi"
 	"github.com/golang-migrate/migrate/v4"
 	migratep "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -20,23 +18,28 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/Decentr-net/ariadne"
+	decentr "github.com/Decentr-net/decentr/app"
 	"github.com/Decentr-net/logrus/sentry"
 
+	"github.com/Decentr-net/theseus/internal/consumer"
+	"github.com/Decentr-net/theseus/internal/consumer/blockchain"
 	"github.com/Decentr-net/theseus/internal/health"
-	"github.com/Decentr-net/theseus/internal/server"
+	"github.com/Decentr-net/theseus/internal/storage"
 	"github.com/Decentr-net/theseus/internal/storage/postgres"
 )
 
 // nolint:lll,gochecknoglobals
 var opts = struct {
-	Host           string        `long:"http.host" env:"HTTP_HOST" default:"0.0.0.0" description:"IP to listen on"`
-	Port           int           `long:"http.port" env:"HTTP_PORT" default:"8080" description:"port to listen on for insecure connections, defaults to a random value"`
-	RequestTimeout time.Duration `long:"http.request-timeout" env:"HTTP_REQUEST_TIMEOUT" default:"45s" description:"request processing timeout"`
-
 	Postgres                   string `long:"postgres" env:"POSTGRES" default:"host=localhost port=5432 user=postgres password=root sslmode=disable" description:"postgres dsn"`
 	PostgresMaxOpenConnections int    `long:"postgres.max_open_connections" env:"POSTGRES_MAX_OPEN_CONNECTIONS" default:"0" description:"postgres maximal open connections count, 0 means unlimited"`
 	PostgresMaxIdleConnections int    `long:"postgres.max_idle_connections" env:"POSTGRES_MAX_IDLE_CONNECTIONS" default:"5" description:"postgres maximal idle connections count"`
 	PostgresMigrations         string `long:"postgres.migrations" env:"POSTGRES_MIGRATIONS" default:"migrations/postgres" description:"postgres migrations directory"`
+
+	BlockchainNode                   string        `long:"blockchain.node" env:"BLOCKCHAIN_NODE" default:"http://zeus.testnet.decentr.xyz:26657" description:"decentr node address"`
+	BlockchainTimeout                time.Duration `long:"blockchain.timeout" env:"BLOCKCHAIN_TIMEOUT" default:"5s" description:"timeout for requests to blockchain node"`
+	BlockchainRetryInterval          time.Duration `long:"blockchain.retry_interval" env:"BLOCKCHAIN_RETRY_INTERVAL" default:"2s" description:"interval to be waited on error before retry"`
+	BlockchainLastBlockRetryInterval time.Duration `long:"blockchain.last_block_retry_interval" env:"BLOCKCHAIN_LAST_BLOCK_RETRY_INTERVAL" default:"1s" description:"duration to be waited when new block isn't produced before retry"`
 
 	LogLevel  string `long:"log.level" env:"LOG_LEVEL" default:"info" description:"Log level" choice:"debug" choice:"info" choice:"warning" choice:"error"`
 	SentryDSN string `long:"sentry.dsn" env:"SENTRY_DSN" description:"sentry dsn"`
@@ -46,8 +49,8 @@ var errTerminated = errors.New("terminated")
 
 func main() {
 	parser := flags.NewParser(&opts, flags.Default)
-	parser.ShortDescription = "Theseus"
-	parser.LongDescription = "Theseus"
+	parser.ShortDescription = "Theseus Sync"
+	parser.LongDescription = "Theseus Sync"
 
 	_, err := parser.Parse()
 
@@ -70,6 +73,7 @@ func main() {
 			Dsn:              opts.SentryDSN,
 			AttachStacktrace: true,
 			Release:          health.GetVersion(),
+			ServerName:       "sync",
 		}, logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel)
 
 		if err != nil {
@@ -82,26 +86,16 @@ func main() {
 		logrus.Warn("skip sentry initialization")
 	}
 
-	r := chi.NewMux()
-
 	db := mustGetDB()
 
 	s := postgres.New(db)
 
-	server.SetupRouter(s, r, opts.RequestTimeout)
-	health.SetupRouter(r,
-		health.SubjectPinger("postgres", db.PingContext),
-	)
-
-	srv := http.Server{
-		Addr:    fmt.Sprintf("%s:%d", opts.Host, opts.Port),
-		Handler: r,
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 
 	gr, _ := errgroup.WithContext(ctx)
-	gr.Go(srv.ListenAndServe)
+	gr.Go(func() error {
+		return mustGetConsumer(s).Run(ctx)
+	})
 
 	gr.Go(func() error {
 		sigs := make(chan os.Signal, 1)
@@ -112,17 +106,14 @@ func main() {
 		logrus.Infof("terminating by %s signal", s)
 
 		cancel()
-		if err := srv.Shutdown(context.Background()); err != nil {
-			logrus.WithError(err).Error("failed to gracefully shutdown server")
-		}
 
 		return errTerminated
 	})
 
 	logrus.Info("service started")
 
-	if err := gr.Wait(); err != nil && !errors.Is(err, errTerminated) && !errors.Is(err, http.ErrServerClosed) {
-		logrus.WithError(err).Fatal("service unexpectedly closed")
+	if err := gr.Wait(); err != nil && !errors.Is(err, errTerminated) {
+		logrus.WithError(err).Fatal("sync service unexpectedly closed")
 	}
 }
 
@@ -167,4 +158,13 @@ func mustGetDB() *sql.DB {
 	}
 
 	return db
+}
+
+func mustGetConsumer(s storage.Storage) consumer.Consumer {
+	fetcher, err := ariadne.New(opts.BlockchainNode, decentr.MakeCodec(), opts.BlockchainTimeout)
+	if err != nil {
+		logrus.WithError(err).Fatal("failed to create blocks fetcher")
+	}
+
+	return blockchain.New(fetcher, s, opts.BlockchainRetryInterval, opts.BlockchainLastBlockRetryInterval)
 }

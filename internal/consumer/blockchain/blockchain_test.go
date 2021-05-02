@@ -180,9 +180,11 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 
 			s := storagemock.NewMockStorage(gomock.NewController(t))
 
-			s.EXPECT().WithLockedHeight(gomock.Any(), uint64(1), gomock.Any()).DoAndReturn(func(_ context.Context, _ uint64, f func(_ storage.Storage) error) error {
+			s.EXPECT().InTx(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, f func(_ storage.Storage) error) error {
 				return f(s)
 			})
+			s.EXPECT().SetHeight(gomock.Any(), uint64(1)).Return(nil)
+			s.EXPECT().RefreshViews(gomock.Any()).Return(nil)
 			tc.expect(s)
 
 			block := ariadne.Block{
@@ -203,15 +205,9 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 func TestBlockchain_processBlockFunc_errors(t *testing.T) {
 	s := storagemock.NewMockStorage(gomock.NewController(t))
 
-	s.EXPECT().WithLockedHeight(gomock.Any(), uint64(1), gomock.Any()).DoAndReturn(func(_ context.Context, _ uint64, f func(_ storage.Storage) error) error {
+	s.EXPECT().InTx(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, f func(_ storage.Storage) error) error {
 		return context.Canceled
 	})
 
 	require.Error(t, blockchain{s: s}.processBlockFunc(context.Background())(ariadne.Block{Height: 1}))
-
-	s.EXPECT().WithLockedHeight(gomock.Any(), uint64(1), gomock.Any()).DoAndReturn(func(_ context.Context, _ uint64, f func(_ storage.Storage) error) error {
-		return storage.ErrRequestedHeightIsTooLow
-	})
-
-	require.NoError(t, blockchain{s: s}.processBlockFunc(context.Background())(ariadne.Block{Height: 1}))
 }
