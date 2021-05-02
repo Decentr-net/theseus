@@ -15,7 +15,6 @@ import (
 	ariadnemock "github.com/Decentr-net/ariadne/mock"
 	community "github.com/Decentr-net/decentr/x/community/types"
 	pdv "github.com/Decentr-net/decentr/x/pdv/types"
-	profile "github.com/Decentr-net/decentr/x/profile/types"
 
 	"github.com/Decentr-net/theseus/internal/storage"
 	storagemock "github.com/Decentr-net/theseus/internal/storage/mock"
@@ -130,61 +129,6 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 					timestamp,
 					"decentr1u9slwz3sje8j94ccpwlslflg0506yc8y2ylmtz",
 				)
-			},
-		},
-		{
-			name: "set_profile",
-			msg: profile.MsgSetPublic{
-				Owner: owner,
-				Public: profile.Public{
-					FirstName: "first_name",
-					LastName:  "last_name",
-					Bio:       "bio",
-					Avatar:    "avatar",
-					Gender:    "male",
-					Birthday:  "01.02.2006",
-				},
-			},
-			expect: func(s *storagemock.MockStorage) {
-				s.EXPECT().GetProfileStats(gomock.Any(), owner.String()).Return(storage.Stats{}, nil)
-				s.EXPECT().SetProfile(gomock.Any(), &storage.SetProfileParams{
-					Address:   owner.String(),
-					FirstName: "first_name",
-					LastName:  "last_name",
-					Bio:       "bio",
-					Avatar:    "avatar",
-					Gender:    "male",
-					Birthday:  "01.02.2006",
-					CreatedAt: timestamp,
-				})
-			},
-		},
-		{
-			name: "set_profile_new",
-			msg: profile.MsgSetPublic{
-				Owner: owner,
-				Public: profile.Public{
-					FirstName: "first_name",
-					LastName:  "last_name",
-					Bio:       "bio",
-					Avatar:    "avatar",
-					Gender:    "male",
-					Birthday:  "01.02.2006",
-				},
-			},
-			expect: func(s *storagemock.MockStorage) {
-				s.EXPECT().GetProfileStats(gomock.Any(), owner.String()).Return(nil, storage.ErrNotFound)
-				s.EXPECT().AddPDV(gomock.Any(), owner.String(), int64(1000000), timestamp).Return(nil)
-				s.EXPECT().SetProfile(gomock.Any(), &storage.SetProfileParams{
-					Address:   owner.String(),
-					FirstName: "first_name",
-					LastName:  "last_name",
-					Bio:       "bio",
-					Avatar:    "avatar",
-					Gender:    "male",
-					Birthday:  "01.02.2006",
-					CreatedAt: timestamp,
-				})
 			},
 		},
 		{

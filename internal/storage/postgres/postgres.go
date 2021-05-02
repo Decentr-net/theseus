@@ -41,18 +41,6 @@ type postDTO struct {
 	UPDV         int64     `db:"updv"`
 }
 
-type profileDTO struct {
-	Address    string    `db:"address"`
-	FirstName  string    `db:"first_name"`
-	LastName   string    `db:"last_name"`
-	Bio        string    `db:"bio"`
-	Avatar     string    `db:"avatar"`
-	Gender     string    `db:"gender"`
-	Birthday   string    `db:"birthday"`
-	CreatedAt  time.Time `db:"created_at"`
-	PostsCount uint16    `db:"posts_count"`
-}
-
 func (s pg) WithLockedHeight(ctx context.Context, height uint64, f func(s storage.Storage) error) error {
 	db, ok := s.ext.(*sqlx.DB)
 	if !ok {
@@ -127,25 +115,29 @@ func (s pg) GetHeight(ctx context.Context) (uint64, error) {
 	return h, nil
 }
 
-func (s pg) GetProfiles(ctx context.Context, addr ...string) ([]*storage.Profile, error) {
+func (s pg) GetProfileStats(ctx context.Context, addr ...string) ([]*storage.ProfileStats, error) {
 	if len(addr) == 0 {
-		return []*storage.Profile{}, nil
+		return []*storage.ProfileStats{}, nil
 	}
 
 	addr = stringsUnique(addr)
 
 	query, args, err := sqlx.In(`
-			WITH r AS (
-				SELECT owner AS address, COUNT(*) as posts_count
-				FROM post
-				WHERE deleted_at IS NULL
-				GROUP BY address
-			) 
+			WITH
+			pc AS (
+			    SELECT owner AS address, COUNT(*) as posts_count
+			    FROM post
+			    WHERE deleted_at IS NULL
+			    GROUP BY address
+			),
+			r AS (
+			    SELECT UNNEST(ARRAY[?]::TEXT[]) AS address
+			)
 			SELECT
-				address, first_name, last_name, bio, avatar, gender, birthday, created_at, COALESCE(posts_count, 0) AS posts_count
-			FROM profile
-				LEFT JOIN r USING (address)
-			WHERE address IN (?)
+			    r.address, COALESCE(posts_count, 0) AS posts_count, stats
+			FROM r
+		         LEFT JOIN pc USING (address)
+		         LEFT JOIN pdv_stats USING (address)
 			ORDER BY address
 		`, addr)
 
@@ -153,55 +145,32 @@ func (s pg) GetProfiles(ctx context.Context, addr ...string) ([]*storage.Profile
 		return nil, fmt.Errorf("failed to construct IN clause: %w", err)
 	}
 
-	var p []*profileDTO
+	var p []*struct {
+		Address    string `db:"address"`
+		PostsCount uint16 `db:"posts_count"`
+		Stats      []byte `db:"stats"`
+	}
 
 	if err := sqlx.SelectContext(ctx, s.ext, &p, s.ext.Rebind(query), args...); err != nil {
 		return nil, fmt.Errorf("failed to query: %w", err)
 	}
 
-	out := make([]*storage.Profile, len(p))
+	out := make([]*storage.ProfileStats, len(p))
 	for i, v := range p {
-		out[i] = &storage.Profile{
+		out[i] = &storage.ProfileStats{
 			Address:    v.Address,
-			FirstName:  v.FirstName,
-			LastName:   v.LastName,
-			Bio:        v.Bio,
-			Avatar:     v.Avatar,
-			Gender:     v.Gender,
-			Birthday:   v.Birthday,
-			CreatedAt:  v.CreatedAt,
 			PostsCount: v.PostsCount,
+			Stats:      storage.Stats{},
+		}
+
+		if v.Stats != nil {
+			if err := json.Unmarshal(v.Stats, &out[i].Stats); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal stats: %w", err)
+			}
 		}
 	}
 
 	return out, nil
-}
-
-func (s pg) SetProfile(ctx context.Context, p *storage.SetProfileParams) error {
-	profile := profileDTO{
-		Address:   p.Address,
-		FirstName: p.FirstName,
-		LastName:  p.LastName,
-		Bio:       p.Bio,
-		Avatar:    p.Avatar,
-		Gender:    p.Gender,
-		Birthday:  p.Birthday,
-		CreatedAt: p.CreatedAt,
-	}
-
-	if _, err := sqlx.NamedExecContext(ctx, s.ext,
-		`
-			INSERT INTO profile(address, first_name, last_name, bio, avatar, gender, birthday, created_at)
-			VALUES(:address, :first_name, :last_name, :bio, :avatar, :gender, :birthday, :created_at)
-			ON CONFLICT(address) DO UPDATE SET
-				first_name=excluded.first_name, last_name=excluded.last_name, bio=excluded.bio, avatar=excluded.avatar,
-				gender=excluded.gender, birthday=excluded.birthday
-		`, profile,
-	); err != nil {
-		return fmt.Errorf("failed to exec: %w", err)
-	}
-
-	return nil
 }
 
 func (s pg) CreatePost(ctx context.Context, p *storage.CreatePostParams) error {
@@ -415,7 +384,7 @@ func (s pg) ListPosts(ctx context.Context, p *storage.ListPostsParams) ([]*stora
 	return out, nil
 }
 
-func (s pg) GetStats(ctx context.Context, id ...storage.PostID) (map[storage.PostID]storage.Stats, error) {
+func (s pg) GetPostStats(ctx context.Context, id ...storage.PostID) (map[storage.PostID]storage.Stats, error) {
 	if len(id) == 0 {
 		return map[storage.PostID]storage.Stats{}, nil
 	}
@@ -466,31 +435,6 @@ func (s pg) AddPDV(ctx context.Context, address string, updv int64, timestamp ti
 	}
 
 	return nil
-}
-
-func (s pg) GetProfileStats(ctx context.Context, address string) (storage.Stats, error) {
-	type statsDTO struct {
-		Stats json.RawMessage `db:"stats"`
-	}
-
-	var res statsDTO
-
-	if err := sqlx.GetContext(ctx, s.ext, &res, `
-		SELECT stats FROM pdv_stats
-		WHERE address = $1
-	`, address); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, storage.ErrNotFound
-		}
-		return nil, fmt.Errorf("failed to select: %w", err)
-	}
-
-	var out storage.Stats
-	if err := json.Unmarshal(res.Stats, &out); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal stats: %w", err)
-	}
-
-	return out, nil
 }
 
 func (s pg) GetDecentrStats(ctx context.Context) (*storage.DecentrStats, error) {

@@ -26,9 +26,6 @@ type Storage interface {
 	WithLockedHeight(ctx context.Context, height uint64, f func(s Storage) error) error
 	GetHeight(ctx context.Context) (uint64, error)
 
-	GetProfiles(ctx context.Context, addr ...string) ([]*Profile, error)
-	SetProfile(ctx context.Context, p *SetProfileParams) error
-
 	Follow(ctx context.Context, follower, followee string) error
 	Unfollow(ctx context.Context, follower, followee string) error
 
@@ -40,10 +37,10 @@ type Storage interface {
 	GetLikes(ctx context.Context, likedBy string, id ...PostID) (map[PostID]community.LikeWeight, error)
 	SetLike(ctx context.Context, id PostID, weight community.LikeWeight, timestamp time.Time, likeOwner string) error
 
-	GetStats(ctx context.Context, id ...PostID) (map[PostID]Stats, error)
-
 	AddPDV(ctx context.Context, address string, amount int64, timestamp time.Time) error
-	GetProfileStats(ctx context.Context, address string) (Stats, error)
+
+	GetProfileStats(ctx context.Context, addr ...string) ([]*ProfileStats, error)
+	GetPostStats(ctx context.Context, id ...PostID) (map[PostID]Stats, error)
 
 	GetDecentrStats(ctx context.Context) (*DecentrStats, error)
 }
@@ -117,29 +114,11 @@ type Post struct {
 	UPDV         int64
 }
 
-// SetProfileParams ...
-type SetProfileParams struct {
-	Address   string
-	FirstName string
-	LastName  string
-	Bio       string
-	Avatar    string
-	Gender    string
-	Birthday  string
-	CreatedAt time.Time
-}
-
-// Profile ...
-type Profile struct {
+// ProfileStats ...
+type ProfileStats struct {
 	Address    string
-	FirstName  string
-	LastName   string
-	Bio        string
-	Avatar     string
-	Gender     string
-	Birthday   string
-	CreatedAt  time.Time
 	PostsCount uint16
+	Stats      Stats
 }
 
 // DecentrStats represents all users stats.
