@@ -72,32 +72,20 @@ func Test_listPosts(t *testing.T) {
 		},
 	}, nil)
 
-	s.EXPECT().GetProfiles(gomock.Any(), "owner", "owner2").Return([]*storage.Profile{
+	s.EXPECT().GetProfileStats(gomock.Any(), "owner", "owner2").Return([]*storage.ProfileStats{
 		{
 			Address:    "owner",
-			FirstName:  "f",
-			LastName:   "l",
-			Bio:        "b",
-			Avatar:     "a",
-			Gender:     "g",
-			Birthday:   "b",
-			CreatedAt:  timestamp,
 			PostsCount: 1,
+			Stats:      storage.Stats{"0001-01-01": 1, "1970-01-01": 2},
 		},
 		{
 			Address:    "owner2",
-			FirstName:  "f2",
-			LastName:   "l2",
-			Bio:        "b2",
-			Avatar:     "a2",
-			Gender:     "g2",
-			Birthday:   "b2",
-			CreatedAt:  timestamp,
 			PostsCount: 4,
+			Stats:      storage.Stats{"1970-01-02": 1},
 		},
 	}, nil)
 
-	s.EXPECT().GetStats(
+	s.EXPECT().GetPostStats(
 		gomock.Any(),
 		storage.PostID{"owner", "uuid"},
 		storage.PostID{"owner2", "uuid2"},
@@ -154,28 +142,14 @@ func Test_listPosts(t *testing.T) {
          "createdAt":100
       }
    ],
-   "profiles":{
+   "profileStats":{
       "owner":{
-         "address":"owner",
-         "firstName":"f",
-         "lastName":"l",
-		 "bio":"b",
-         "avatar":"a",
-         "gender":"g",
-         "birthday":"b",
-         "registeredAt":100,
-		 "postsCount": 1
+		 "postsCount": 1,
+		 "stats": [{ "date": "1970-01-01", "value": 2e-6 }]
       },
       "owner2":{
-         "address":"owner2",
-         "firstName":"f2",
-         "lastName":"l2",
-		 "bio":"b2",
-         "avatar":"a2",
-         "gender":"g2",
-         "birthday":"b2",
-         "registeredAt":100,
-		 "postsCount": 4
+		 "postsCount": 4,
+		 "stats": [{ "date": "1970-01-02", "value": 1e-6 }]
       }
    },
    "stats":{
@@ -216,21 +190,15 @@ func Test_getPost(t *testing.T) {
 		UPDV:         3,
 	}, nil)
 
-	srv.EXPECT().GetProfiles(gomock.Any(), "owner").Return([]*storage.Profile{
+	srv.EXPECT().GetProfileStats(gomock.Any(), "owner").Return([]*storage.ProfileStats{
 		{
 			Address:    "owner",
-			FirstName:  "f",
-			LastName:   "l",
-			Bio:        "b",
-			Avatar:     "a",
-			Gender:     "g",
-			Birthday:   "b",
-			CreatedAt:  timestamp,
 			PostsCount: 0,
+			Stats:      storage.Stats{},
 		},
 	}, nil)
 
-	srv.EXPECT().GetStats(
+	srv.EXPECT().GetPostStats(
 		gomock.Any(),
 		storage.PostID{"owner", "uuid"},
 	).Return(map[storage.PostID]storage.Stats{
@@ -268,16 +236,9 @@ func Test_getPost(t *testing.T) {
 		"likeWeight": -1,
 		"createdAt":3000
 	},
-    "profile":{
-		"address":"owner",
-		"firstName":"f",
-		"lastName":"l",
-		"bio":"b",
-		"avatar":"a",
-		"gender":"g",
-		"birthday":"b",
-		"registeredAt":3000,
-		"postsCount":0
+    "profileStats":{
+		"postsCount":0,
+		"stats": []
 	},
 	"stats": [
 		{ "date":"1970-01-01", "value":1e-6 }
@@ -294,8 +255,11 @@ func Test_getProfileStats(t *testing.T) {
 	defer ctrl.Finish()
 	srv := mock.NewMockStorage(ctrl)
 
-	srv.EXPECT().GetProfileStats(gomock.Any(), "owner").Return(storage.Stats{
-		"1970-01-01": 1,
+	srv.EXPECT().GetProfileStats(gomock.Any(), "owner").Return([]*storage.ProfileStats{
+		{
+			PostsCount: 1,
+			Stats:      storage.Stats{"1970-01-01": 1},
+		},
 	}, nil)
 
 	router := chi.NewRouter()
@@ -306,28 +270,7 @@ func Test_getProfileStats(t *testing.T) {
 	router.ServeHTTP(w, r)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.JSONEq(t, `[{ "date":"1970-01-01", "value":1e-6 }]`, w.Body.String())
-}
-
-func Test_getProfileStats_not_found(t *testing.T) {
-	r, err := http.NewRequest(http.MethodGet, "/v1/profiles/owner/stats", nil)
-	require.NoError(t, err)
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	srv := mock.NewMockStorage(ctrl)
-
-	srv.EXPECT().GetProfileStats(gomock.Any(), "owner").Return(nil, storage.ErrNotFound)
-
-	router := chi.NewRouter()
-	s := server{s: srv}
-	router.Get("/v1/profiles/{address}/stats", s.getProfileStats)
-
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, r)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.JSONEq(t, `[]`, w.Body.String())
+	assert.JSONEq(t, `{"postsCount": 1, "stats":[{ "date":"1970-01-01", "value":1e-6 }]}`, w.Body.String())
 }
 
 func Test_getDecentrStats(t *testing.T) {

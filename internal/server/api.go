@@ -11,8 +11,8 @@ const defaultLimit = 20
 // swagger:model
 type ListPostsResponse struct {
 	Posts []*Post `json:"posts"`
-	// Profiles dictionary where key is an address and value is a profile.
-	Profiles map[string]Profile `json:"profiles"`
+	// ProfileStats contains profiles stats.
+	ProfileStats map[string]ProfileStats `json:"profileStats"`
 	// Posts' statistics dictionary where key is a full form ID (owner/uuid) and value is statistics
 	Stats map[string][]StatsItem `json:"stats"`
 }
@@ -20,9 +20,9 @@ type ListPostsResponse struct {
 // GetPostResponse ...
 // swagger:model
 type GetPostResponse struct {
-	Post    Post        `json:"post"`
-	Profile *Profile    `json:"profile"`
-	Stats   []StatsItem `json:"stats"`
+	Post         Post         `json:"post"`
+	ProfileStats ProfileStats `json:"profileStats"`
+	Stats        []StatsItem  `json:"stats"`
 }
 
 // Post ...
@@ -40,18 +40,10 @@ type Post struct {
 	CreatedAt     uint64                `json:"createdAt"`
 }
 
-// Profile ...
-type Profile struct {
-	Address      string `json:"address"`
-	FirstName    string `json:"firstName"`
-	LastName     string `json:"lastName"`
-	Bio          string `json:"bio"`
-	Avatar       string `json:"avatar"`
-	Gender       string `json:"gender"`
-	Birthday     string `json:"birthday"`
-	RegisteredAt uint64 `json:"registeredAt"`
-
-	PostsCount uint16 `json:"postsCount"`
+// ProfileStats ...
+type ProfileStats struct {
+	PostsCount uint16      `json:"postsCount"`
+	Stats      []StatsItem `json:"stats"`
 }
 
 // DecentrStats ...

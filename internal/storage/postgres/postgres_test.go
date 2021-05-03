@@ -198,72 +198,57 @@ func TestPg_WithLockedHeight(t *testing.T) {
 	mu.Lock() // do not finish until second routine will finish
 }
 
-func TestPg_SetProfile(t *testing.T) {
+func TestPg_GetProfileStats(t *testing.T) {
 	defer cleanup(t)
-
-	expected := storage.SetProfileParams{
-		Address:   "address",
-		FirstName: "first_name",
-		LastName:  "last_name",
-		Bio:       "bio",
-		Avatar:    "avatar",
-		Gender:    "male",
-		Birthday:  "01.02.2020",
-		CreatedAt: time.Now().UTC(),
-	}
-
-	require.NoError(t, s.SetProfile(ctx, &expected))
-	p, err := s.GetProfiles(ctx, expected.Address)
-	require.NoError(t, err)
-	require.Len(t, p, 1)
-	require.Equal(t, expected.Address, p[0].Address)
-	require.Equal(t, expected.FirstName, p[0].FirstName)
-	require.Equal(t, expected.LastName, p[0].LastName)
-	require.Equal(t, expected.Bio, p[0].Bio)
-	require.Equal(t, expected.Avatar, p[0].Avatar)
-	require.Equal(t, expected.Gender, p[0].Gender)
-	require.Equal(t, expected.Birthday, p[0].Birthday)
-	require.Equal(t, expected.CreatedAt.UTC().Unix(), p[0].CreatedAt.Unix())
-}
-
-func TestPg_GetProfiles(t *testing.T) {
-	defer cleanup(t)
-
-	p := storage.SetProfileParams{
-		Address:   "address",
-		FirstName: "first_name",
-		LastName:  "last_name",
-		Bio:       "bio",
-		Avatar:    "avatar",
-		Gender:    "male",
-		Birthday:  "01.02.2020",
-		CreatedAt: time.Now().UTC(),
-	}
-
-	require.NoError(t, s.SetProfile(ctx, &p))
-
-	p.Address = "address_2"
-	require.NoError(t, s.SetProfile(ctx, &p))
-
-	p.Address = "address_3"
-	require.NoError(t, s.SetProfile(ctx, &p))
 
 	require.NoError(t, s.CreatePost(ctx, &storage.CreatePostParams{
-		Owner: "address_2",
+		Owner: "address",
 		UUID:  "123",
 	}))
 	require.NoError(t, s.CreatePost(ctx, &storage.CreatePostParams{
-		Owner: "address_2",
+		Owner: "address",
 		UUID:  "124",
 	}))
-	require.NoError(t, s.DeletePost(ctx, storage.PostID{"address_2", "124"}, time.Now(), "address_2"))
+	require.NoError(t, s.DeletePost(ctx, storage.PostID{"address", "124"}, time.Now(), "address_2"))
 
-	pp, err := s.GetProfiles(ctx, "address", "address_2", "address_4")
+	now := time.Now()
+	yersterday := time.Now().Add(-time.Hour * 24)
+
+	require.NoError(t, s.AddPDV(ctx, "address", utils.InitialTokenBalance().Int64(), time.Time{}))
+	require.NoError(t, s.AddPDV(ctx, "address_1", utils.InitialTokenBalance().Int64(), time.Time{}))
+
+	require.NoError(t, s.AddPDV(ctx, "address", 10, yersterday))
+	require.NoError(t, s.AddPDV(ctx, "address", 10, now))
+	require.NoError(t, s.AddPDV(ctx, "address_1", 10, yersterday))
+
+	refreshViews(t)
+
+	pp, err := s.GetProfileStats(ctx, "address", "address_1", "address_2")
 	require.NoError(t, err)
-	require.Len(t, pp, 2)
+	require.Len(t, pp, 3)
 
-	require.EqualValues(t, 0, pp[0].PostsCount)
-	require.EqualValues(t, 1, pp[1].PostsCount)
+	assert.EqualValues(t, &storage.ProfileStats{
+		Address:    "address",
+		PostsCount: 1,
+		Stats: storage.Stats{
+			"0001-01-01":                    1000000,
+			yersterday.Format("2006-01-02"): 1000010,
+			now.Format("2006-01-02"):        1000020,
+		},
+	}, pp[0])
+	assert.EqualValues(t, &storage.ProfileStats{
+		Address:    "address_1",
+		PostsCount: 0,
+		Stats: storage.Stats{
+			"0001-01-01":                    1000000,
+			yersterday.Format("2006-01-02"): 1000010,
+		},
+	}, pp[1])
+	assert.EqualValues(t, &storage.ProfileStats{
+		Address:    "address_2",
+		PostsCount: 0,
+		Stats:      storage.Stats{},
+	}, pp[2])
 }
 
 func TestPg_CreatePost(t *testing.T) {
@@ -629,7 +614,7 @@ func TestPg_GetStats(t *testing.T) {
 
 	refreshViews(t)
 
-	stats, err := s.GetStats(ctx, storage.PostID{"1", "1"}, storage.PostID{"2", "2"})
+	stats, err := s.GetPostStats(ctx, storage.PostID{"1", "1"}, storage.PostID{"2", "2"})
 	require.NoError(t, err)
 
 	// nolint
@@ -650,38 +635,6 @@ func TestPg_AddPDV(t *testing.T) {
 	defer cleanup(t)
 
 	require.NoError(t, s.AddPDV(ctx, "addr", 10, time.Now()))
-}
-
-func TestPg_GetProfileStats(t *testing.T) {
-	defer cleanup(t)
-
-	today := time.Now().UTC()
-	yesterday := today.Add(-time.Hour * 24)
-	monthAgo := today.Add(-time.Hour * 24 * 32)
-	require.NoError(t, s.AddPDV(ctx, "addr2", 5, today))
-	require.NoError(t, s.AddPDV(ctx, "addr", 10, today))
-	require.NoError(t, s.AddPDV(ctx, "addr", 10, yesterday))
-	require.NoError(t, s.AddPDV(ctx, "addr", 10, monthAgo))
-
-	refreshViews(t)
-
-	stats, err := s.GetProfileStats(ctx, "addr")
-	require.NoError(t, err)
-	assert.Equal(t, storage.Stats{
-		today.Format("2006-01-02"):     30,
-		yesterday.Format("2006-01-02"): 20,
-		monthAgo.Format("2006-01-02"):  10,
-	}, stats)
-
-	stats, err = s.GetProfileStats(ctx, "addr2")
-	require.NoError(t, err)
-	assert.Equal(t, storage.Stats{
-		today.Format("2006-01-02"): 5,
-	}, stats)
-
-	_, err = s.GetProfileStats(ctx, "123")
-	require.Error(t, err)
-	assert.True(t, errors.Is(err, storage.ErrNotFound))
 }
 
 func TestPg_GetAllUsersStats(t *testing.T) {

@@ -121,14 +121,14 @@ func (s server) listPosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	profiles, err := s.s.GetProfiles(r.Context(), extractProfileIDsFromPosts(posts)...)
+	profileStats, err := s.s.GetProfileStats(r.Context(), extractProfileIDsFromPosts(posts)...)
 	if err != nil {
 		api.WriteInternalErrorf(r.Context(), w, "failed to get profiles: %s", err.Error())
 		return
 	}
 
 	ids := extractPostIDsFromPosts(posts)
-	stats, err := s.s.GetStats(r.Context(), ids...)
+	stats, err := s.s.GetPostStats(r.Context(), ids...)
 	if err != nil {
 		api.WriteInternalErrorf(r.Context(), w, "failed get stats: %s", err.Error())
 		return
@@ -143,7 +143,7 @@ func (s server) listPosts(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	api.WriteOK(w, http.StatusOK, newListPostsResponse(posts, profiles, stats, liked))
+	api.WriteOK(w, http.StatusOK, newListPostsResponse(posts, profileStats, stats, liked))
 }
 
 func (s server) getPost(w http.ResponseWriter, r *http.Request) {
@@ -199,14 +199,8 @@ func (s server) getPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	profile, err := s.s.GetProfiles(r.Context(), post.Owner)
-	if err != nil {
-		api.WriteInternalErrorf(r.Context(), w, "failed to get profile: %s", err.Error())
-		return
-	}
-
 	pID := storage.PostID{Owner: post.Owner, UUID: post.UUID}
-	stats, err := s.s.GetStats(r.Context(), pID)
+	stats, err := s.s.GetPostStats(r.Context(), pID)
 	if err != nil {
 		api.WriteInternalErrorf(r.Context(), w, "failed to get stats: %s", err.Error())
 		return
@@ -216,9 +210,13 @@ func (s server) getPost(w http.ResponseWriter, r *http.Request) {
 		Post: *toAPIPost(post),
 	}
 
-	if len(profile) == 1 {
-		resp.Profile = toAPIProfile(profile[0])
+	profileStats, err := s.s.GetProfileStats(r.Context(), post.Owner)
+	if err != nil {
+		api.WriteInternalErrorf(r.Context(), w, "failed to get profile: %s", err.Error())
+		return
 	}
+
+	resp.ProfileStats = toAPIProfileStats(profileStats[0])
 
 	if s, ok := stats[pID]; ok {
 		resp.Stats = toAPIStats(s)
@@ -253,11 +251,9 @@ func (s server) getProfileStats(w http.ResponseWriter, r *http.Request) {
 	//   type: string
 	// responses:
 	//   '200':
-	//     description: Posts
+	//     description: Profile stats
 	//     schema:
-	//       type: array
-	//       items:
-	//         "$ref": "#/definitions/StatsItem"
+	//       "$ref": "#/definitions/ProfileStats"
 	//   '404':
 	//     description: profile not found
 	//     schema:
@@ -280,15 +276,11 @@ func (s server) getProfileStats(w http.ResponseWriter, r *http.Request) {
 
 	stats, err := s.s.GetProfileStats(r.Context(), address)
 	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			api.WriteOK(w, http.StatusOK, []StatsItem{})
-			return
-		}
 		api.WriteInternalErrorf(r.Context(), w, "failed to get profile stats: %s", err.Error())
 		return
 	}
 
-	api.WriteOK(w, http.StatusOK, toAPIStats(stats))
+	api.WriteOK(w, http.StatusOK, toAPIProfileStats(stats[0]))
 }
 
 func (s server) getDecentrStats(w http.ResponseWriter, r *http.Request) {
@@ -454,7 +446,7 @@ func extractPostIDsFromPosts(p []*storage.Post) []storage.PostID {
 
 func newListPostsResponse(
 	posts []*storage.Post,
-	profiles []*storage.Profile,
+	profileStats []*storage.ProfileStats,
 	stats map[storage.PostID]storage.Stats,
 	liked map[storage.PostID]community.LikeWeight,
 ) ListPostsResponse {
@@ -465,9 +457,9 @@ func newListPostsResponse(
 		out.Posts[i] = toAPIPost(v)
 	}
 
-	out.Profiles = make(map[string]Profile, len(out.Profiles))
-	for _, v := range profiles {
-		out.Profiles[v.Address] = *toAPIProfile(v)
+	out.ProfileStats = make(map[string]ProfileStats, len(out.ProfileStats))
+	for _, v := range profileStats {
+		out.ProfileStats[v.Address] = toAPIProfileStats(v)
 	}
 
 	out.Stats = make(map[string][]StatsItem, len(stats))
@@ -503,24 +495,6 @@ func toAPIPost(p *storage.Post) *Post {
 	}
 }
 
-func toAPIProfile(p *storage.Profile) *Profile {
-	if p == nil {
-		return nil
-	}
-
-	return &Profile{
-		Address:      p.Address,
-		FirstName:    p.FirstName,
-		LastName:     p.LastName,
-		Bio:          p.Bio,
-		Avatar:       p.Avatar,
-		Gender:       p.Gender,
-		Birthday:     p.Birthday,
-		RegisteredAt: uint64(p.CreatedAt.Unix()),
-		PostsCount:   p.PostsCount,
-	}
-}
-
 func toAPIStats(s storage.Stats) []StatsItem {
 	o := make([]StatsItem, 0, len(s))
 
@@ -536,4 +510,24 @@ func toAPIStats(s storage.Stats) []StatsItem {
 	}
 
 	return o
+}
+
+func toAPIProfileStats(s *storage.ProfileStats) ProfileStats {
+	stats := make([]StatsItem, 0, len(s.Stats))
+
+	for k, v := range s.Stats {
+		if k == "0001-01-01" {
+			continue
+		}
+
+		stats = append(stats, StatsItem{
+			Date:  k,
+			Value: utils.TokenToFloat64(sdk.NewInt(v)),
+		})
+	}
+
+	return ProfileStats{
+		PostsCount: s.PostsCount,
+		Stats:      stats,
+	}
 }

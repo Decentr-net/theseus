@@ -14,8 +14,6 @@ import (
 	"github.com/Decentr-net/decentr/app"
 	community "github.com/Decentr-net/decentr/x/community/types"
 	"github.com/Decentr-net/decentr/x/pdv"
-	"github.com/Decentr-net/decentr/x/profile"
-	"github.com/Decentr-net/decentr/x/utils"
 
 	"github.com/Decentr-net/theseus/internal/consumer"
 	"github.com/Decentr-net/theseus/internal/storage"
@@ -76,8 +74,6 @@ func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Blo
 
 			for _, msg := range block.Messages() {
 				switch msg := msg.(type) {
-				case profile.MsgSetPublic:
-					return processMsgSetPublicProfile(ctx, s, block.Time, &msg)
 				case community.MsgCreatePost:
 					return processMsgCreatePost(ctx, s, block.Time, &msg)
 				case community.MsgDeletePost:
@@ -150,32 +146,6 @@ func processMsgSetLike(ctx context.Context, s storage.Storage, timestamp time.Ti
 	}
 
 	return s.SetLike(ctx, storage.PostID{Owner: msg.PostOwner.String(), UUID: msg.PostUUID}, msg.Weight, timestamp, msg.Owner.String())
-}
-
-func processMsgSetPublicProfile(ctx context.Context, s storage.Storage, timestamp time.Time, msg *profile.MsgSetPublic) error {
-	if _, err := s.GetProfileStats(ctx, msg.Owner.String()); err != nil {
-		if !errors.Is(err, storage.ErrNotFound) {
-			return fmt.Errorf("failed to check profile's pdv: %w", err)
-		}
-		if err := s.AddPDV(ctx, msg.Owner.String(), utils.InitialTokenBalance().Int64(), timestamp); err != nil {
-			return fmt.Errorf("failed to set initial pdv balance: %w", err)
-		}
-	}
-
-	if err := s.SetProfile(ctx, &storage.SetProfileParams{
-		Address:   msg.Owner.String(),
-		FirstName: msg.Public.FirstName,
-		LastName:  msg.Public.LastName,
-		Bio:       msg.Public.Bio,
-		Avatar:    msg.Public.Avatar,
-		Gender:    string(msg.Public.Gender),
-		Birthday:  msg.Public.Birthday,
-		CreatedAt: timestamp,
-	}); err != nil {
-		return fmt.Errorf("failed to set profile: %w", err)
-	}
-
-	return nil
 }
 
 func processMsgFollow(ctx context.Context, s storage.Storage, msg community.MsgFollow) error {

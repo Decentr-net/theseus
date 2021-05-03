@@ -6,23 +6,21 @@ github.com/ChainSafe/go-schnorrkel
 ## explicit
 github.com/Decentr-net/ariadne
 github.com/Decentr-net/ariadne/mock
-# github.com/Decentr-net/decentr v1.2.4
+# github.com/Decentr-net/decentr v1.2.6-0.20210501165306-33b638ede490
 ## explicit
 github.com/Decentr-net/decentr/app
+github.com/Decentr-net/decentr/app/ante
 github.com/Decentr-net/decentr/x/community
 github.com/Decentr-net/decentr/x/community/client/cli
 github.com/Decentr-net/decentr/x/community/client/rest
 github.com/Decentr-net/decentr/x/community/keeper
 github.com/Decentr-net/decentr/x/community/types
 github.com/Decentr-net/decentr/x/pdv
+github.com/Decentr-net/decentr/x/pdv/ante
 github.com/Decentr-net/decentr/x/pdv/client/cli
+github.com/Decentr-net/decentr/x/pdv/client/rest
 github.com/Decentr-net/decentr/x/pdv/keeper
 github.com/Decentr-net/decentr/x/pdv/types
-github.com/Decentr-net/decentr/x/profile
-github.com/Decentr-net/decentr/x/profile/client/cli
-github.com/Decentr-net/decentr/x/profile/client/rest
-github.com/Decentr-net/decentr/x/profile/keeper
-github.com/Decentr-net/decentr/x/profile/types
 github.com/Decentr-net/decentr/x/token
 github.com/Decentr-net/decentr/x/token/client/cli
 github.com/Decentr-net/decentr/x/token/client/rest
@@ -36,6 +34,9 @@ github.com/Decentr-net/go-api
 ## explicit
 github.com/Decentr-net/logrus/context
 github.com/Decentr-net/logrus/sentry
+# github.com/Masterminds/squirrel v1.5.0
+## explicit
+github.com/Masterminds/squirrel
 # github.com/Microsoft/go-winio v0.4.14
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
@@ -344,6 +345,10 @@ github.com/jmoiron/sqlx
 github.com/jmoiron/sqlx/reflectx
 # github.com/keybase/go-keychain v0.0.0-20190712205309-48d3d31d256d
 github.com/keybase/go-keychain
+# github.com/lann/builder v0.0.0-20180802200727-47ae307949d0
+github.com/lann/builder
+# github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0
+github.com/lann/ps
 # github.com/lib/pq v1.3.0
 ## explicit
 github.com/lib/pq

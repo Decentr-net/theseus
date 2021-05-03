@@ -231,12 +231,9 @@
         ],
         "responses": {
           "200": {
-            "description": "Posts",
+            "description": "Profile stats",
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/StatsItem"
-              }
+              "$ref": "#/definitions/ProfileStats"
             }
           },
           "400": {
@@ -302,8 +299,8 @@
         "post": {
           "$ref": "#/definitions/Post"
         },
-        "profile": {
-          "$ref": "#/definitions/Profile"
+        "profileStats": {
+          "$ref": "#/definitions/ProfileStats"
         },
         "stats": {
           "type": "array",
@@ -331,13 +328,13 @@
           },
           "x-go-name": "Posts"
         },
-        "profiles": {
-          "description": "Profiles dictionary where key is an address and value is a profile.",
+        "profileStats": {
+          "description": "ProfileStats contains profiles stats.",
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/definitions/Profile"
+            "$ref": "#/definitions/ProfileStats"
           },
-          "x-go-name": "Profiles"
+          "x-go-name": "ProfileStats"
         },
         "stats": {
           "description": "Posts' statistics dictionary where key is a full form ID (owner/uuid) and value is statistics",
@@ -406,47 +403,21 @@
       },
       "x-go-package": "github.com/Decentr-net/theseus/internal/server"
     },
-    "Profile": {
+    "ProfileStats": {
       "type": "object",
       "title": "Profile ...",
       "properties": {
-        "address": {
-          "type": "string",
-          "x-go-name": "Address"
-        },
-        "avatar": {
-          "type": "string",
-          "x-go-name": "Avatar"
-        },
-        "bio": {
-          "type": "string",
-          "x-go-name": "Bio"
-        },
-        "birthday": {
-          "type": "string",
-          "x-go-name": "Birthday"
-        },
-        "firstName": {
-          "type": "string",
-          "x-go-name": "FirstName"
-        },
-        "gender": {
-          "type": "string",
-          "x-go-name": "Gender"
-        },
-        "lastName": {
-          "type": "string",
-          "x-go-name": "LastName"
-        },
         "postsCount": {
           "type": "integer",
           "format": "uint16",
           "x-go-name": "PostsCount"
         },
-        "registeredAt": {
-          "type": "integer",
-          "format": "uint64",
-          "x-go-name": "RegisteredAt"
+        "stats": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StatsItem"
+          },
+          "x-go-name": "Stats"
         }
       },
       "x-go-package": "github.com/Decentr-net/theseus/internal/server"

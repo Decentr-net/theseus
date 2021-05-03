@@ -10,7 +10,6 @@ import (
 
 	"github.com/Decentr-net/decentr/app"
 	"github.com/Decentr-net/decentr/x/community"
-	"github.com/Decentr-net/decentr/x/profile"
 	"github.com/Decentr-net/decentr/x/token"
 	"github.com/golang-migrate/migrate/v4"
 	migratep "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -33,7 +32,6 @@ var opts = struct {
 type genesis struct {
 	AppState struct {
 		Community community.GenesisState `json:"community"`
-		Profile   profile.GenesisState   `json:"profile"`
 		Token     token.GenesisState     `json:"token"`
 	} `json:"app_state"`
 }
@@ -69,28 +67,7 @@ func main() {
 	db := mustGetDB()
 	s := postgres.New(db)
 
-	logrus.Info("import profiles")
-
 	t := time.Now().UTC()
-
-	for i, v := range g.AppState.Profile.ProfileRecords {
-		if err := s.SetProfile(context.Background(), &storage.SetProfileParams{
-			Address:   v.Owner.String(),
-			FirstName: v.Public.FirstName,
-			LastName:  v.Public.LastName,
-			Bio:       v.Public.Bio,
-			Avatar:    v.Public.Avatar,
-			Gender:    string(v.Public.Gender),
-			Birthday:  v.Public.Birthday,
-			CreatedAt: t,
-		}); err != nil {
-			logrus.WithError(err).Fatal("failed to put profile into db")
-		}
-
-		if i%20 == 0 {
-			logrus.Infof("%d of %d profiles imported", i+1, len(g.AppState.Profile.ProfileRecords))
-		}
-	}
 
 	logrus.Info("import token")
 	i := 0
