@@ -9,6 +9,7 @@ RUN make linux
 FROM alpine:${ALPINE_VERSION}
 RUN apk update && apk add ca-certificates
 COPY --from=0 /go/src/github.com/Decentr-net/theseus/build/theseus-linux-amd64 /theseusd
+COPY --from=0 /go/src/github.com/Decentr-net/theseus/build/sync-linux-amd64 /syncd
 COPY static /static
 COPY scripts/migrations /migrations
 ENTRYPOINT [ "/theseusd" ]

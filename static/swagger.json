@@ -405,7 +405,7 @@
     },
     "ProfileStats": {
       "type": "object",
-      "title": "Profile ...",
+      "title": "ProfileStats ...",
       "properties": {
         "postsCount": {
           "type": "integer",

@@ -36,18 +36,32 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
 }
 
-// WithLockedHeight mocks base method
-func (m *MockStorage) WithLockedHeight(ctx context.Context, height uint64, f func(storage.Storage) error) error {
+// InTx mocks base method
+func (m *MockStorage) InTx(ctx context.Context, f func(storage.Storage) error) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithLockedHeight", ctx, height, f)
+	ret := m.ctrl.Call(m, "InTx", ctx, f)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// WithLockedHeight indicates an expected call of WithLockedHeight
-func (mr *MockStorageMockRecorder) WithLockedHeight(ctx, height, f interface{}) *gomock.Call {
+// InTx indicates an expected call of InTx
+func (mr *MockStorageMockRecorder) InTx(ctx, f interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithLockedHeight", reflect.TypeOf((*MockStorage)(nil).WithLockedHeight), ctx, height, f)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InTx", reflect.TypeOf((*MockStorage)(nil).InTx), ctx, f)
+}
+
+// SetHeight mocks base method
+func (m *MockStorage) SetHeight(ctx context.Context, height uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetHeight", ctx, height)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetHeight indicates an expected call of SetHeight
+func (mr *MockStorageMockRecorder) SetHeight(ctx, height interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHeight", reflect.TypeOf((*MockStorage)(nil).SetHeight), ctx, height)
 }
 
 // GetHeight mocks base method
@@ -63,6 +77,20 @@ func (m *MockStorage) GetHeight(ctx context.Context) (uint64, error) {
 func (mr *MockStorageMockRecorder) GetHeight(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHeight", reflect.TypeOf((*MockStorage)(nil).GetHeight), ctx)
+}
+
+// RefreshViews mocks base method
+func (m *MockStorage) RefreshViews(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RefreshViews", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RefreshViews indicates an expected call of RefreshViews
+func (mr *MockStorageMockRecorder) RefreshViews(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefreshViews", reflect.TypeOf((*MockStorage)(nil).RefreshViews), ctx)
 }
 
 // Follow mocks base method

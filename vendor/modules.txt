@@ -34,9 +34,6 @@ github.com/Decentr-net/go-api
 ## explicit
 github.com/Decentr-net/logrus/context
 github.com/Decentr-net/logrus/sentry
-# github.com/Masterminds/squirrel v1.5.0
-## explicit
-github.com/Masterminds/squirrel
 # github.com/Microsoft/go-winio v0.4.14
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
@@ -345,10 +342,6 @@ github.com/jmoiron/sqlx
 github.com/jmoiron/sqlx/reflectx
 # github.com/keybase/go-keychain v0.0.0-20190712205309-48d3d31d256d
 github.com/keybase/go-keychain
-# github.com/lann/builder v0.0.0-20180802200727-47ae307949d0
-github.com/lann/builder
-# github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0
-github.com/lann/ps
 # github.com/lib/pq v1.3.0
 ## explicit
 github.com/lib/pq

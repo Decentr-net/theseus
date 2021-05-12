@@ -3,7 +3,6 @@ package storage
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -15,16 +14,12 @@ import (
 // ErrNotFound ...
 var ErrNotFound = fmt.Errorf("not found")
 
-// ErrRequestedHeightIsTooHigh returned when the height requested in WithLockedHeight function is more than expected.
-var ErrRequestedHeightIsTooHigh = errors.New("requested height is too high")
-
-// ErrRequestedHeightIsTooLow returned when the height requested in WithLockedHeight function is less than expected.
-var ErrRequestedHeightIsTooLow = errors.New("requested height is too low")
-
 // Storage provides methods for interacting with database.
 type Storage interface {
-	WithLockedHeight(ctx context.Context, height uint64, f func(s Storage) error) error
+	InTx(ctx context.Context, f func(s Storage) error) error
+	SetHeight(ctx context.Context, height uint64) error
 	GetHeight(ctx context.Context) (uint64, error)
+	RefreshViews(ctx context.Context) error
 
 	Follow(ctx context.Context, follower, followee string) error
 	Unfollow(ctx context.Context, follower, followee string) error

@@ -2,8 +2,10 @@
 V := @
 
 OUT_DIR := ./build
-OUT := $(OUT_DIR)/theseus
-MAIN_PKG := ./cmd/theseus
+THESEUS_OUT := $(OUT_DIR)/theseus
+THESEUS_MAIN_PKG := ./cmd/theseus
+SYNC_OUT := $(OUT_DIR)/sync
+SYNC_MAIN_PKG := ./cmd/sync
 
 VERSION := $(shell echo $(shell git describe --tags) | sed 's/^v//')
 COMMIT := $(shell git log -1 --format='%H')
@@ -27,17 +29,22 @@ default: build
 
 .PHONY: build
 build:
-	@echo BUILDING $(OUT)
-	$(V) CGO_ENABLED=0 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(OUT) $(MAIN_PKG)
+	@echo BUILDING $(THESEUS_OUT)
+	$(V) CGO_ENABLED=0 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(THESEUS_OUT) $(THESEUS_MAIN_PKG)
+	@echo BUILDING $(SYNC_OUT)
+	$(V) CGO_ENABLED=0 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(SYNC_OUT) $(SYNC_MAIN_PKG)
 	@echo DONE
 
 .PHONY: linux
 linux: export GOOS := linux
 linux: export GOARCH := amd64
-linux: LINUX_OUT := $(OUT)-$(GOOS)-$(GOARCH)
+linux: THESEUS_LINUX_OUT := $(THESEUS_OUT)-$(GOOS)-$(GOARCH)
+linux: SYNC_LINUX_OUT := $(SYNC_OUT)-$(GOOS)-$(GOARCH)
 linux:
-	@echo BUILDING $(LINUX_OUT)
-	$(V) CGO_ENABLED=0 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(LINUX_OUT) $(MAIN_PKG)
+	@echo BUILDING $(THESEUS_LINUX_OUT)
+	$(V) CGO_ENABLED=0 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(THESEUS_LINUX_OUT) $(THESEUS_MAIN_PKG)
+	@echo BUILDING $(SYNC_LINUX_OUT)
+	$(V) CGO_ENABLED=0 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(SYNC_LINUX_OUT) $(SYNC_MAIN_PKG)
 	@echo DONE
 
 .PHONY: image
