@@ -13,7 +13,7 @@ import (
 	"github.com/Decentr-net/ariadne"
 	"github.com/Decentr-net/decentr/app"
 	community "github.com/Decentr-net/decentr/x/community/types"
-	"github.com/Decentr-net/decentr/x/pdv"
+	"github.com/Decentr-net/decentr/x/operations"
 
 	"github.com/Decentr-net/theseus/internal/consumer"
 	"github.com/Decentr-net/theseus/internal/storage"
@@ -86,7 +86,7 @@ func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Blo
 					err = processMsgFollow(ctx, s, msg)
 				case community.MsgUnfollow:
 					err = processMsgUnfollow(ctx, s, msg)
-				case pdv.MsgDistributeRewards:
+				case operations.MsgDistributeRewards:
 					err = processDistributeRewards(ctx, s, block.Time, &msg)
 				default:
 					log.WithField("msg", fmt.Sprintf("%s/%s", msg.Route(), msg.Type())).Debug("skip message")
@@ -162,7 +162,7 @@ func processMsgUnfollow(ctx context.Context, s storage.Storage, msg community.Ms
 	return s.Unfollow(ctx, msg.Owner.String(), msg.Whom.String())
 }
 
-func processDistributeRewards(ctx context.Context, s storage.Storage, timestamp time.Time, msg *pdv.MsgDistributeRewards) error {
+func processDistributeRewards(ctx context.Context, s storage.Storage, timestamp time.Time, msg *operations.MsgDistributeRewards) error {
 	for _, v := range msg.Rewards { // nolint:gocritic
 		if err := s.AddPDV(ctx, v.Receiver.String(), int64(v.Reward), timestamp); err != nil {
 			return fmt.Errorf("failed to add pdv: %w", err)

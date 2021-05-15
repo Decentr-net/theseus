@@ -14,7 +14,7 @@ import (
 	"github.com/Decentr-net/ariadne"
 	ariadnemock "github.com/Decentr-net/ariadne/mock"
 	community "github.com/Decentr-net/decentr/x/community/types"
-	pdv "github.com/Decentr-net/decentr/x/pdv/types"
+	operations "github.com/Decentr-net/decentr/x/operations/types"
 
 	"github.com/Decentr-net/theseus/internal/storage"
 	storagemock "github.com/Decentr-net/theseus/internal/storage/mock"
@@ -153,9 +153,9 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 		},
 		{
 			name: "distribute_rewards",
-			msg: pdv.MsgDistributeRewards{
+			msg: operations.MsgDistributeRewards{
 				Owner: owner,
-				Rewards: []pdv.Reward{
+				Rewards: []operations.Reward{
 					{
 						Receiver: owner,
 						Reward:   100,
