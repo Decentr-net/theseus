@@ -3,37 +3,23 @@
 
 Theseus provides Decentr community off-chain functionality.
 
-## Run
-### Import genesis to database
-```
-go run scripts/genesis2db/main.go --genesis.json /path/to/genesis.json --postgres "host=localhost port=5432 user=postgres password=root sslmode=disable" --postgres.migrations "scripts/migrations/postgres"
-```
-
-### Docker
-#### Local image
-```
-make image
-docker run -it --rm -e "HTTP_HOST=0.0.0.0" -e "HTTP_PORT=7070" -e "LOG_LEVEL=debug" -p "7080:7070" theseus-local
-```
-### From source
-```
-go run cmd/theseus/main.go \
-    --http.host=0.0.0.0 \
-    --http.port=8080 \
-    --http.request-timeout 10s \
-    --log.level=debug \
-    --postgres="host=localhost port=5432 user=postgres password=root sslmode=disable" \
-    --postgres.migrations="scripts/migrations/postgres" \
-    --blockchain.node="zeus.testnet.decentr.xyz:26656" \
-```
-
 ## Parameters
-
+### theseusd
 | CLI param         | Environment var          | Default | Required | Description
 |---------------|------------------|---------------|-------|---------------------------------
 | http.host         | HTTP_HOST         | 0.0.0.0  | true | host to bind server
 | http.port    | HTTP_PORT    | 8080  | true | port to listen
 | http.request-timeout | HTTP_REQUEST_TIMEOUT | 45s | false | request processing timeout
+| postgres    | POSTGRES    | host=localhost port=5432 user=postgres password=root sslmode=disable  | true | postgres dsn
+| postgres.max_open_connections    | POSTGRES_MAX_OPEN_CONNECTIONS    | 0 | true | postgres maximal open connections count, 0 means unlimited
+| postgres.max_idle_connections    | POSTGRES_MAX_IDLE_CONNECTIONS    | 5 | true | postgres maximal idle connections count
+| postgres.migrations    | POSTGRES_MIGRATIONS    | /migrations/postgres | true | postgres migrations directory
+| log.level   | LOG_LEVEL   | info | false | level of logger (debug,info,warn,error)
+| sentry.dsn    | SENTRY_DSN    |  | false | sentry dsn
+
+### syncd
+| CLI param         | Environment var          | Default | Required | Description
+|---------------|------------------|---------------|-------|---------------------------------
 | postgres    | POSTGRES    | host=localhost port=5432 user=postgres password=root sslmode=disable  | true | postgres dsn
 | postgres.max_open_connections    | POSTGRES_MAX_OPEN_CONNECTIONS    | 0 | true | postgres maximal open connections count, 0 means unlimited
 | postgres.max_idle_connections    | POSTGRES_MAX_IDLE_CONNECTIONS    | 5 | true | postgres maximal idle connections count
@@ -44,6 +30,11 @@ go run cmd/theseus/main.go \
 | blockchain.last_block_retry_interval   | BLOCKCHAIN_LAST_BLOCK_RETRY_INTERVAL    | 1s | true | duration to be waited when new block isn't produced before retry
 | log.level   | LOG_LEVEL   | info | false | level of logger (debug,info,warn,error)
 | sentry.dsn    | SENTRY_DSN    |  | false | sentry dsn
+
+## Import genesis to database
+```
+go run scripts/genesis2db/main.go --genesis.json /path/to/genesis.json --postgres "host=localhost port=5432 user=postgres password=root sslmode=disable" --postgres.migrations "scripts/migrations/postgres"
+```
 
 ## Development
 ### Makefile
