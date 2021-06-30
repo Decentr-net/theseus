@@ -88,6 +88,8 @@ func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Blo
 					err = processMsgUnfollow(ctx, s, msg)
 				case operations.MsgDistributeRewards:
 					err = processDistributeRewards(ctx, s, block.Time, &msg)
+				case operations.MsgResetAccount:
+					err = processMsgResetAccount(ctx, s, msg.AccountOwner)
 				default:
 					log.WithField("msg", fmt.Sprintf("%s/%s", msg.Route(), msg.Type())).Debug("skip message")
 				}
@@ -167,6 +169,14 @@ func processDistributeRewards(ctx context.Context, s storage.Storage, timestamp 
 		if err := s.AddPDV(ctx, v.Receiver.String(), int64(v.Reward), timestamp); err != nil {
 			return fmt.Errorf("failed to add pdv: %w", err)
 		}
+	}
+
+	return nil
+}
+
+func processMsgResetAccount(ctx context.Context, s storage.Storage, owner sdk.AccAddress) error {
+	if err := s.WipeAccount(ctx, owner.String()); err != nil {
+		return fmt.Errorf("failed to wipe account: %w", err)
 	}
 
 	return nil

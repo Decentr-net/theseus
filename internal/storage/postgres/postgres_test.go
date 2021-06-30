@@ -622,3 +622,36 @@ func TestPg_GetAllUsersStats(t *testing.T) {
 		DDV: 20,
 	}, stats)
 }
+
+func TestPg_WipeAccount(t *testing.T) {
+	defer cleanup(t)
+
+	require.NoError(t, s.InTx(context.Background(), func(s storage.Storage) error {
+		require.NoError(t, s.CreatePost(ctx, &storage.CreatePostParams{UUID: "1", Owner: "1", Category: 1, CreatedAt: time.Now()}))
+		require.NoError(t, s.SetLike(ctx, storage.PostID{"1", "1"}, -1, time.Now(), "3"))
+		require.NoError(t, s.Follow(ctx, "1", "2"))
+		require.NoError(t, s.Follow(ctx, "2", "1"))
+		require.NoError(t, s.AddPDV(ctx, "1", 10, time.Now()))
+		require.NoError(t, s.RefreshViews(ctx))
+
+		require.NoError(t, s.WipeAccount(ctx, "1"))
+
+		_, err := s.GetPost(ctx, storage.PostID{Owner: "1", UUID: "1"})
+		assert.ErrorIs(t, err, storage.ErrNotFound)
+
+		_, err = s.GetPost(ctx, storage.PostID{Owner: "", UUID: "1"})
+		assert.NoError(t, err)
+
+		stats, err := s.GetProfileStats(ctx, "1")
+		require.NoError(t, err)
+		assert.Equal(t, []*storage.ProfileStats{{Address: "1", Stats: storage.Stats{}}}, stats)
+
+		return nil
+	}))
+}
+
+func TestPg_WipeAccount_InTx(t *testing.T) {
+	defer cleanup(t)
+
+	require.Error(t, s.WipeAccount(ctx, "1"))
+}

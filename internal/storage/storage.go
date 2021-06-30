@@ -38,6 +38,8 @@ type Storage interface {
 	GetPostStats(ctx context.Context, id ...PostID) (map[PostID]Stats, error)
 
 	GetDecentrStats(ctx context.Context) (*DecentrStats, error)
+
+	WipeAccount(ctx context.Context, owner string) error
 }
 
 // SortType ...
