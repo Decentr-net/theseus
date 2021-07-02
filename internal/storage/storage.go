@@ -39,7 +39,7 @@ type Storage interface {
 
 	GetDecentrStats(ctx context.Context) (*DecentrStats, error)
 
-	WipeAccount(ctx context.Context, owner string) error
+	ResetAccount(ctx context.Context, owner string) error
 }
 
 // SortType ...

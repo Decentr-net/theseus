@@ -623,7 +623,7 @@ func TestPg_GetAllUsersStats(t *testing.T) {
 	}, stats)
 }
 
-func TestPg_WipeAccount(t *testing.T) {
+func TestPg_ResetAccount(t *testing.T) {
 	defer cleanup(t)
 
 	require.NoError(t, s.InTx(context.Background(), func(s storage.Storage) error {
@@ -634,7 +634,7 @@ func TestPg_WipeAccount(t *testing.T) {
 		require.NoError(t, s.AddPDV(ctx, "1", 10, time.Now()))
 		require.NoError(t, s.RefreshViews(ctx))
 
-		require.NoError(t, s.WipeAccount(ctx, "1"))
+		require.NoError(t, s.ResetAccount(ctx, "1"))
 
 		_, err := s.GetPost(ctx, storage.PostID{Owner: "1", UUID: "1"})
 		assert.ErrorIs(t, err, storage.ErrNotFound)
@@ -653,5 +653,5 @@ func TestPg_WipeAccount(t *testing.T) {
 func TestPg_WipeAccount_InTx(t *testing.T) {
 	defer cleanup(t)
 
-	require.Error(t, s.WipeAccount(ctx, "1"))
+	require.Error(t, s.ResetAccount(ctx, "1"))
 }

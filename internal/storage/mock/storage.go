@@ -282,16 +282,16 @@ func (mr *MockStorageMockRecorder) GetDecentrStats(ctx interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDecentrStats", reflect.TypeOf((*MockStorage)(nil).GetDecentrStats), ctx)
 }
 
-// WipeAccount mocks base method
-func (m *MockStorage) WipeAccount(ctx context.Context, owner string) error {
+// ResetAccount mocks base method
+func (m *MockStorage) ResetAccount(ctx context.Context, owner string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WipeAccount", ctx, owner)
+	ret := m.ctrl.Call(m, "ResetAccount", ctx, owner)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// WipeAccount indicates an expected call of WipeAccount
-func (mr *MockStorageMockRecorder) WipeAccount(ctx, owner interface{}) *gomock.Call {
+// ResetAccount indicates an expected call of ResetAccount
+func (mr *MockStorageMockRecorder) ResetAccount(ctx, owner interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WipeAccount", reflect.TypeOf((*MockStorage)(nil).WipeAccount), ctx, owner)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetAccount", reflect.TypeOf((*MockStorage)(nil).ResetAccount), ctx, owner)
 }

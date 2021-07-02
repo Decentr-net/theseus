@@ -449,9 +449,9 @@ func (s pg) GetDecentrStats(ctx context.Context) (*storage.DecentrStats, error) 
 	}, nil
 }
 
-func (s pg) WipeAccount(ctx context.Context, owner string) error {
+func (s pg) ResetAccount(ctx context.Context, owner string) error {
 	if _, ok := s.ext.(*sqlx.Tx); !ok {
-		return errors.New("WipeAccount can be run only in tx mode") //nolint:goerr113
+		return errors.New("ResetAccount can be run only in tx mode") //nolint:goerr113
 	}
 
 	if _, err := s.ext.ExecContext(ctx, `
@@ -469,13 +469,13 @@ func (s pg) WipeAccount(ctx context.Context, owner string) error {
 	if _, err := s.ext.ExecContext(ctx, `
 		UPDATE post SET owner = '' WHERE owner = $1
 	`, owner); err != nil {
-		return fmt.Errorf("failed to delete likes: %w", err)
+		return fmt.Errorf("failed to delete user from posts: %w", err)
 	}
 
 	if _, err := s.ext.ExecContext(ctx, `
 		DELETE FROM updv WHERE address = $1
 	`, owner); err != nil {
-		return fmt.Errorf("failed to delete likes: %w", err)
+		return fmt.Errorf("failed to delete updv: %w", err)
 	}
 
 	return s.RefreshViews(ctx)

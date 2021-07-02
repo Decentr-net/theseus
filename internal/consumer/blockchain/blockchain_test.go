@@ -178,7 +178,7 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 				AccountOwner: owner,
 			},
 			expect: func(s *storagemock.MockStorage) {
-				s.EXPECT().WipeAccount(gomock.Any(), owner.String())
+				s.EXPECT().ResetAccount(gomock.Any(), owner.String())
 			},
 		},
 	}

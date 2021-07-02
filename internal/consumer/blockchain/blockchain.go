@@ -175,7 +175,7 @@ func processDistributeRewards(ctx context.Context, s storage.Storage, timestamp 
 }
 
 func processMsgResetAccount(ctx context.Context, s storage.Storage, owner sdk.AccAddress) error {
-	if err := s.WipeAccount(ctx, owner.String()); err != nil {
+	if err := s.ResetAccount(ctx, owner.String()); err != nil {
 		return fmt.Errorf("failed to wipe account: %w", err)
 	}
 
