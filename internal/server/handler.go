@@ -522,7 +522,7 @@ func toAPIProfileStats(s *storage.ProfileStats) ProfileStats {
 
 		stats = append(stats, StatsItem{
 			Date:  k,
-			Value: utils.TokenToFloat64(sdk.NewInt(v)),
+			Value: utils.TokenToFloat64(utils.InitialTokenBalance().Add(sdk.NewInt(v))),
 		})
 	}
 

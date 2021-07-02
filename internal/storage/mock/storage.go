@@ -281,3 +281,17 @@ func (mr *MockStorageMockRecorder) GetDecentrStats(ctx interface{}) *gomock.Call
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDecentrStats", reflect.TypeOf((*MockStorage)(nil).GetDecentrStats), ctx)
 }
+
+// ResetAccount mocks base method
+func (m *MockStorage) ResetAccount(ctx context.Context, owner string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResetAccount", ctx, owner)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResetAccount indicates an expected call of ResetAccount
+func (mr *MockStorageMockRecorder) ResetAccount(ctx, owner interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetAccount", reflect.TypeOf((*MockStorage)(nil).ResetAccount), ctx, owner)
+}

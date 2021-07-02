@@ -145,11 +145,11 @@ func Test_listPosts(t *testing.T) {
    "profileStats":{
       "owner":{
 		 "postsCount": 1,
-		 "stats": [{ "date": "1970-01-01", "value": 2e-6 }]
+		 "stats": [{ "date": "1970-01-01", "value": 1.000002 }]
       },
       "owner2":{
 		 "postsCount": 4,
-		 "stats": [{ "date": "1970-01-02", "value": 1e-6 }]
+		 "stats": [{ "date": "1970-01-02", "value": 1.000001 }]
       }
    },
    "stats":{
@@ -270,7 +270,7 @@ func Test_getProfileStats(t *testing.T) {
 	router.ServeHTTP(w, r)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.JSONEq(t, `{"postsCount": 1, "stats":[{ "date":"1970-01-01", "value":1e-6 }]}`, w.Body.String())
+	assert.JSONEq(t, `{"postsCount": 1, "stats":[{ "date":"1970-01-01", "value":1.000001 }]}`, w.Body.String())
 }
 
 func Test_getDecentrStats(t *testing.T) {

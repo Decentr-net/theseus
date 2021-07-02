@@ -171,6 +171,16 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 				s.EXPECT().AddPDV(gomock.Any(), owner2.String(), int64(10), timestamp)
 			},
 		},
+		{
+			name: "wipe_account",
+			msg: operations.MsgResetAccount{
+				Owner:        owner,
+				AccountOwner: owner,
+			},
+			expect: func(s *storagemock.MockStorage) {
+				s.EXPECT().ResetAccount(gomock.Any(), owner.String())
+			},
+		},
 	}
 
 	for i := range tt {

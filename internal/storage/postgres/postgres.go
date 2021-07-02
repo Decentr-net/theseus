@@ -449,6 +449,38 @@ func (s pg) GetDecentrStats(ctx context.Context) (*storage.DecentrStats, error) 
 	}, nil
 }
 
+func (s pg) ResetAccount(ctx context.Context, owner string) error {
+	if _, ok := s.ext.(*sqlx.Tx); !ok {
+		return errors.New("ResetAccount can be run only in tx mode") //nolint:goerr113
+	}
+
+	if _, err := s.ext.ExecContext(ctx, `
+		DELETE FROM follow WHERE followee = $1 OR follower = $1
+	`, owner); err != nil {
+		return fmt.Errorf("failed to delete follows: %w", err)
+	}
+
+	if _, err := s.ext.ExecContext(ctx, `
+		DELETE FROM "like" WHERE liked_by = $1
+	`, owner); err != nil {
+		return fmt.Errorf("failed to delete likes: %w", err)
+	}
+
+	if _, err := s.ext.ExecContext(ctx, `
+		UPDATE post SET owner = '' WHERE owner = $1
+	`, owner); err != nil {
+		return fmt.Errorf("failed to delete user from posts: %w", err)
+	}
+
+	if _, err := s.ext.ExecContext(ctx, `
+		DELETE FROM updv WHERE address = $1
+	`, owner); err != nil {
+		return fmt.Errorf("failed to delete updv: %w", err)
+	}
+
+	return s.RefreshViews(ctx)
+}
+
 // New creates new instance of pg.
 func New(db *sql.DB) storage.Storage {
 	return pg{
