@@ -70,7 +70,7 @@ func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Blo
 		return b.s.InTx(ctx, func(s storage.Storage) error {
 			log := log.WithField("height", block.Height).WithField("txs", len(block.Txs))
 			log.Info("processing block")
-			log.WithField("msgs", block.Messages()).Debug()
+			log.WithField("msgs", fmt.Sprintf("%+v", block.Messages())).Debug()
 
 			for _, msg := range block.Messages() {
 				var err error

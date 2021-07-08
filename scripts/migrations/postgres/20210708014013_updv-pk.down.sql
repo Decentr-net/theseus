@@ -1,0 +1,7 @@
+BEGIN;
+
+ALTER TABLE updv DROP CONSTRAINT updv_pkey;
+ALTER TABLE updv DROP COLUMN id;
+ALTER TABLE updv ADD PRIMARY KEY (address, timestamp);
+
+COMMIT;
