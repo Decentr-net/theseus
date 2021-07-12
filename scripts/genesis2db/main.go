@@ -11,6 +11,7 @@ import (
 	"github.com/Decentr-net/decentr/app"
 	"github.com/Decentr-net/decentr/x/community"
 	"github.com/Decentr-net/decentr/x/token"
+	"github.com/Decentr-net/decentr/x/utils"
 	"github.com/golang-migrate/migrate/v4"
 	migratep "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -72,7 +73,7 @@ func main() {
 	logrus.Info("import token")
 	i := 0
 	for k, v := range g.AppState.Token.Balances {
-		if err := s.AddPDV(context.Background(), k, v.Int64(), t); err != nil {
+		if err := s.AddPDV(context.Background(), k, v.Sub(utils.InitialTokenBalance()).Int64(), t); err != nil {
 			logrus.WithError(err).Fatal("failed to put token into db")
 		}
 
