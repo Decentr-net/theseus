@@ -435,7 +435,7 @@ func (s pg) GetDecentrStats(ctx context.Context) (*storage.DecentrStats, error) 
 
 	if err := sqlx.GetContext(ctx, s.ext, &statsDTO, `
 		WITH pdv AS (
-			SELECT address, SUM(updv) - 1000000 AS earned_pdv, SUM(updv) AS current_pdv from updv
+			SELECT address, SUM(updv) AS earned_pdv, SUM(updv + 1000000) AS current_pdv from updv
 			group by address
 		)
 		SELECT SUM(earned_pdv) AS ddv, AVG(current_pdv) AS adv FROM pdv;
