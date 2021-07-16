@@ -607,8 +607,6 @@ func TestPg_GetAllUsersStats(t *testing.T) {
 	today := time.Now().UTC()
 	yesterday := today.Add(-time.Hour * 24)
 	monthAgo := today.Add(-time.Hour * 24 * 32)
-	require.NoError(t, s.AddPDV(ctx, "addr", utils.InitialTokenBalance().Int64(), time.Time{}))
-	require.NoError(t, s.AddPDV(ctx, "addr2", utils.InitialTokenBalance().Int64(), time.Time{}))
 	require.NoError(t, s.AddPDV(ctx, "addr2", 5, today))
 	require.NoError(t, s.AddPDV(ctx, "addr2", -15, yesterday))
 	require.NoError(t, s.AddPDV(ctx, "addr", 10, today))
