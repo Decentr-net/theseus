@@ -44,7 +44,7 @@ func (s server) listPosts(w http.ResponseWriter, r *http.Request) {
 	//   default: createdAt
 	//   type: string
 	//   enum: [created_at, likesCount, dislikesCount, pdv]
-	//   example: likes
+	//   example: likesCount
 	// - name: orderBy
 	//   description: sets sort's direct
 	//   in: query
@@ -59,7 +59,7 @@ func (s server) listPosts(w http.ResponseWriter, r *http.Request) {
 	//   required: false
 	//   example: decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz
 	// - name: likedBy
-	//   descriptions: filters posts by one who liked its
+	//   description: filters posts by one who liked its
 	//   in: query
 	//   required: false
 	//   example: decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz
