@@ -333,7 +333,10 @@ func (s pg) ListPosts(ctx context.Context, p *storage.ListPostsParams) ([]*stora
 
 	if p.LikedBy != nil {
 		b.WriteString(`
-			INNER JOIN "like" ON calculated_post.owner = "like".post_owner AND calculated_post.uuid = "like".post_uuid AND "like".liked_by = ?
+			INNER JOIN "like"
+			ON
+				calculated_post.owner = "like".post_owner AND calculated_post.uuid = "like".post_uuid AND
+				"like".liked_by = ? AND "like".weight != 0
 		`)
 		args = append(args, *p.LikedBy)
 	}
