@@ -470,7 +470,7 @@ func (s pg) ResetAccount(ctx context.Context, owner string) error {
 	}
 
 	if _, err := s.ext.ExecContext(ctx, `
-		UPDATE post SET owner = concat('deleted', md5(owner)) WHERE owner = $1
+		UPDATE post SET owner = concat('deleted', md5(concat(owner, uuid))) WHERE owner = $1
 	`, owner); err != nil {
 		return fmt.Errorf("failed to delete user from posts: %w", err)
 	}
