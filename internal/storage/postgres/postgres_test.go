@@ -653,3 +653,8 @@ func TestPg_WipeAccount_InTx(t *testing.T) {
 
 	require.Error(t, s.ResetAccount(ctx, "1"))
 }
+
+func TestPostDTO(t *testing.T) {
+	p := postDTO{Owner: "deleted123"}
+	assert.Empty(t, p.toStorage().Owner)
+}

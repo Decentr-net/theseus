@@ -41,6 +41,28 @@ type postDTO struct {
 	UPDV         int64     `db:"updv"`
 }
 
+func (p *postDTO) toStorage() *storage.Post {
+	o := storage.Post{
+		UUID:         p.UUID,
+		Owner:        p.Owner,
+		Title:        p.Title,
+		Category:     community.Category(p.Category),
+		PreviewImage: p.PreviewImage,
+		Text:         p.Text,
+		Likes:        p.Likes,
+		Dislikes:     p.Dislikes,
+		UPDV:         p.UPDV,
+		CreatedAt:    p.CreatedAt,
+	}
+
+	// return post consistent with blockchain
+	if strings.HasPrefix(o.Owner, "deleted") {
+		o.Owner = ""
+	}
+
+	return &o
+}
+
 func (s pg) InTx(ctx context.Context, f func(s storage.Storage) error) error {
 	db, ok := s.ext.(*sqlx.DB)
 	if !ok {
@@ -203,18 +225,7 @@ func (s pg) GetPost(ctx context.Context, id storage.PostID) (*storage.Post, erro
 		return nil, fmt.Errorf("failed to query: %w", err)
 	}
 
-	return &storage.Post{
-		UUID:         p.UUID,
-		Owner:        p.Owner,
-		Title:        p.Title,
-		Category:     community.Category(p.Category),
-		PreviewImage: p.PreviewImage,
-		Text:         p.Text,
-		Likes:        p.Likes,
-		Dislikes:     p.Dislikes,
-		UPDV:         p.UPDV,
-		CreatedAt:    p.CreatedAt,
-	}, nil
+	return p.toStorage(), nil
 }
 
 func (s pg) DeletePost(ctx context.Context, id storage.PostID, timestamp time.Time, deletedBy string) error {
@@ -360,18 +371,7 @@ func (s pg) ListPosts(ctx context.Context, p *storage.ListPostsParams) ([]*stora
 
 	out := make([]*storage.Post, len(res))
 	for i, v := range res {
-		out[i] = &storage.Post{
-			UUID:         v.UUID,
-			Owner:        v.Owner,
-			Title:        v.Title,
-			Category:     community.Category(v.Category),
-			PreviewImage: v.PreviewImage,
-			Text:         v.Text,
-			CreatedAt:    v.CreatedAt,
-			Likes:        v.Likes,
-			Dislikes:     v.Dislikes,
-			UPDV:         v.UPDV,
-		}
+		out[i] = v.toStorage()
 	}
 
 	return out, nil
