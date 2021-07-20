@@ -149,7 +149,18 @@ func processMsgSetLike(ctx context.Context, s storage.Storage, timestamp time.Ti
 		return fmt.Errorf("failed to add pdv to profile stats: %w", err)
 	}
 
-	return s.SetLike(ctx, storage.PostID{Owner: msg.PostOwner.String(), UUID: msg.PostUUID}, msg.Weight, timestamp, msg.Owner.String())
+	postID := storage.PostID{Owner: msg.PostOwner.String(), UUID: msg.PostUUID}
+
+	// check the related post exists
+	if _, err := s.GetPost(ctx, postID); err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			log.WithField("msg", msg).Errorf("set like: related post not found")
+			return nil
+		}
+		return err
+	}
+
+	return s.SetLike(ctx, postID, msg.Weight, timestamp, msg.Owner.String())
 }
 
 func processMsgSetPublicProfile(ctx context.Context, s storage.Storage, timestamp time.Time, msg *profile.MsgSetPublic) error {

@@ -108,6 +108,8 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 
 				s.EXPECT().AddPDV(gomock.Any(), owner.String(), int64(-2), timestamp).Return(nil)
 
+				s.EXPECT().GetPost(gomock.Any(), storage.PostID{Owner: "decentr1u9slwz3sje8j94ccpwlslflg0506yc8y2ylmtz", UUID: "1234"}).Return(&storage.Post{}, nil)
+
 				s.EXPECT().SetLike(
 					gomock.Any(),
 					storage.PostID{Owner: "decentr1u9slwz3sje8j94ccpwlslflg0506yc8y2ylmtz", UUID: "1234"},
