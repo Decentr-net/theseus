@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
-	"github.com/go-chi/chi"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 )
@@ -32,7 +32,10 @@ type VersionResponse struct {
 
 // Pinger pings external service.
 type Pinger interface {
-	Ping(ctx context.Context) error
+	// Ping returns object with meta information and error
+	Ping(ctx context.Context) (interface{}, error)
+	// Name returns name of pinger
+	Name() string
 }
 
 type subjectPinger struct {
@@ -41,12 +44,12 @@ type subjectPinger struct {
 }
 
 // Ping ...
-func (p subjectPinger) Ping(ctx context.Context) error {
-	if err := p.f(ctx); err != nil {
-		return fmt.Errorf("failed to ping %s: %w", p.s, err)
-	}
+func (p subjectPinger) Ping(ctx context.Context) (interface{}, error) {
+	return nil, p.f(ctx)
+}
 
-	return nil
+func (p subjectPinger) Name() string {
+	return p.s
 }
 
 // SubjectPinger returns wrapper over Ping function which adds subject to error message.
@@ -58,38 +61,43 @@ func SubjectPinger(s string, f func(ctx context.Context) error) Pinger {
 	}
 }
 
-// SetupRouter setups all pingers to /health.
-func SetupRouter(r chi.Router, p ...Pinger) {
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		ctx, _ := context.WithTimeout(r.Context(), time.Second*5) // nolint:govet
+func Handler(timeout time.Duration, p ...Pinger) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx, _ := context.WithTimeout(r.Context(), timeout) // nolint:govet
 		gr, ctx := errgroup.WithContext(ctx)
+
+		var mu sync.Mutex
+		resp := struct {
+			VersionResponse
+			Meta   map[string]interface{} `json:"meta"`
+			Errors map[string]error       `json:"errors"`
+		}{
+			VersionResponse: VersionResponse{Version: version, Commit: commit},
+			Meta:            map[string]interface{}{},
+			Errors:          map[string]error{},
+		}
 
 		for i := range p {
 			v := p[i]
 			gr.Go(func() error {
-				if err := v.Ping(ctx); err != nil {
+				m, err := v.Ping(ctx)
+				if err != nil {
 					logrus.WithError(err).Error("health check failed")
-					return err
 				}
+
+				mu.Lock()
+				resp.Meta[v.Name()] = m
+				resp.Errors[v.Name()] = err
+				mu.Unlock()
+
 				return nil
 			})
 		}
 
 		if err := gr.Wait(); err != nil {
-			data, _ := json.Marshal(struct {
-				VersionResponse
-				Error string `json:"error"`
-			}{
-				Error:           err.Error(),
-				VersionResponse: VersionResponse{Version: version, Commit: commit},
-			})
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write(data) // nolint
-
-			return
 		}
-
-		data, _ := json.Marshal(VersionResponse{Version: version, Commit: commit})
-		w.Write(data) // nolint
-	})
+		data, _ := json.Marshal(resp)
+		w.Write(data)
+	}
 }
