@@ -51,6 +51,14 @@ func logError(h uint64, err error) {
 	log.WithField("height", h).WithError(err).Error("failed to process block")
 }
 
+func (b blockchain) Name() string {
+	return "blockchain"
+}
+
+func (b blockchain) Ping(ctx context.Context) (interface{}, error) {
+	return b.s.GetHeight(ctx)
+}
+
 func (b blockchain) Run(ctx context.Context) error {
 	from, err := b.s.GetHeight(ctx)
 	if err != nil {

@@ -20,6 +20,8 @@ Theseus provides Decentr community off-chain functionality.
 ### syncd
 | CLI param         | Environment var          | Default | Required | Description
 |---------------|------------------|---------------|-------|---------------------------------
+| http.host         | HTTP_HOST         | 0.0.0.0  | true | host to bind server used to health checking purposes 
+| http.port    | HTTP_PORT    | 8080  | true | port to listen
 | postgres    | POSTGRES    | host=localhost port=5432 user=postgres password=root sslmode=disable  | true | postgres dsn
 | postgres.max_open_connections    | POSTGRES_MAX_OPEN_CONNECTIONS    | 0 | true | postgres maximal open connections count, 0 means unlimited
 | postgres.max_idle_connections    | POSTGRES_MAX_IDLE_CONNECTIONS    | 5 | true | postgres maximal idle connections count

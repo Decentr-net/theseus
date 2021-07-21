@@ -5,11 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/go-chi/chi"
 	"github.com/golang-migrate/migrate/v4"
 	migratep "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -20,17 +22,20 @@ import (
 
 	"github.com/Decentr-net/ariadne"
 	decentr "github.com/Decentr-net/decentr/app"
+	"github.com/Decentr-net/go-api/health"
 	"github.com/Decentr-net/logrus/sentry"
 
 	"github.com/Decentr-net/theseus/internal/consumer"
 	"github.com/Decentr-net/theseus/internal/consumer/blockchain"
-	"github.com/Decentr-net/theseus/internal/health"
 	"github.com/Decentr-net/theseus/internal/storage"
 	"github.com/Decentr-net/theseus/internal/storage/postgres"
 )
 
 // nolint:lll,gochecknoglobals
 var opts = struct {
+	Host string `long:"http.host" env:"HTTP_HOST" default:"0.0.0.0" description:"IP to listen on"`
+	Port int    `long:"http.port" env:"HTTP_PORT" default:"8080" description:"port to listen on for insecure connections, defaults to a random value"`
+
 	Postgres                   string `long:"postgres" env:"POSTGRES" default:"host=localhost port=5432 user=postgres password=root sslmode=disable" description:"postgres dsn"`
 	PostgresMaxOpenConnections int    `long:"postgres.max_open_connections" env:"POSTGRES_MAX_OPEN_CONNECTIONS" default:"0" description:"postgres maximal open connections count, 0 means unlimited"`
 	PostgresMaxIdleConnections int    `long:"postgres.max_idle_connections" env:"POSTGRES_MAX_IDLE_CONNECTIONS" default:"5" description:"postgres maximal idle connections count"`
@@ -89,14 +94,26 @@ func main() {
 	db := mustGetDB()
 
 	s := postgres.New(db)
+	c := mustGetConsumer(s)
+
+	r := chi.NewMux()
+	r.Get("/health", health.Handler(
+		5*time.Second,
+		health.SubjectPinger("postgres", db.PingContext),
+		c,
+	))
+	srv := http.Server{
+		Addr:    fmt.Sprintf("%s:%d", opts.Host, opts.Port),
+		Handler: r,
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	gr, _ := errgroup.WithContext(ctx)
 	gr.Go(func() error {
-		return mustGetConsumer(s).Run(ctx)
+		return c.Run(ctx)
 	})
-
+	gr.Go(srv.ListenAndServe)
 	gr.Go(func() error {
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)

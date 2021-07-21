@@ -20,9 +20,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/Decentr-net/go-api/health"
 	"github.com/Decentr-net/logrus/sentry"
 
-	"github.com/Decentr-net/theseus/internal/health"
 	"github.com/Decentr-net/theseus/internal/server"
 	"github.com/Decentr-net/theseus/internal/storage/postgres"
 )
@@ -89,9 +89,10 @@ func main() {
 	s := postgres.New(db)
 
 	server.SetupRouter(s, r, opts.RequestTimeout)
-	health.SetupRouter(r,
+	r.Get("/health", health.Handler(
+		5*time.Second,
 		health.SubjectPinger("postgres", db.PingContext),
-	)
+	))
 
 	srv := http.Server{
 		Addr:    fmt.Sprintf("%s:%d", opts.Host, opts.Port),
