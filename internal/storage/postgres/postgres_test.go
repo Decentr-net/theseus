@@ -637,9 +637,6 @@ func TestPg_ResetAccount(t *testing.T) {
 		_, err := s.GetPost(ctx, storage.PostID{Owner: "1", UUID: "1"})
 		assert.ErrorIs(t, err, storage.ErrNotFound)
 
-		_, err = s.GetPost(ctx, storage.PostID{Owner: "deleted6512bd43d9caa6e02c990b0a82652dca", UUID: "1"})
-		assert.NoError(t, err)
-
 		stats, err := s.GetProfileStats(ctx, "1")
 		require.NoError(t, err)
 		assert.Equal(t, []*storage.ProfileStats{{Address: "1", Stats: storage.Stats{}}}, stats)

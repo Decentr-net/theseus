@@ -464,13 +464,13 @@ func (s pg) ResetAccount(ctx context.Context, owner string) error {
 	}
 
 	if _, err := s.ext.ExecContext(ctx, `
-		DELETE FROM "like" WHERE liked_by = $1
+		DELETE FROM "like" WHERE liked_by = $1 OR post_owner = $1
 	`, owner); err != nil {
 		return fmt.Errorf("failed to delete likes: %w", err)
 	}
 
 	if _, err := s.ext.ExecContext(ctx, `
-		UPDATE post SET owner = concat('deleted', md5(concat(owner, uuid))) WHERE owner = $1
+		DELETE FROM post WHERE owner = $1
 	`, owner); err != nil {
 		return fmt.Errorf("failed to delete user from posts: %w", err)
 	}
