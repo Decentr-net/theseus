@@ -11,8 +11,8 @@ VERSION := $(shell echo $(shell git describe --tags) | sed 's/^v//')
 COMMIT := $(shell git log -1 --format='%H')
 
 LDFLAGS = -s -w \
-	-X github.com/Decentr-net/theseus/internal/health.version=$(VERSION) \
-	-X github.com/Decentr-net/theseus/internal/health.commit=$(COMMIT)
+	-X github.com/Decentr-net/go-api/health.version=$(VERSION) \
+	-X github.com/Decentr-net/go-api/health.commit=$(COMMIT)
 
 GOBIN := $(shell go env GOPATH)/bin
 
