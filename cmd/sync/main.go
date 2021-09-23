@@ -99,8 +99,7 @@ func main() {
 	r := chi.NewMux()
 	r.Get("/health", health.Handler(
 		5*time.Second,
-		health.SubjectPinger("postgres", db.PingContext),
-		c,
+		c, // consumer gets the height from db
 	))
 	srv := http.Server{
 		Addr:    fmt.Sprintf("%s:%d", opts.Host, opts.Port),
@@ -108,6 +107,8 @@ func main() {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {}()
 
 	gr, _ := errgroup.WithContext(ctx)
 	gr.Go(func() error {
