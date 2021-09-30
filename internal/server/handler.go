@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/go-chi/chi"
 
 	community "github.com/Decentr-net/decentr/x/community/types"
@@ -308,8 +307,8 @@ func (s server) getDecentrStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.WriteOK(w, http.StatusOK, DecentrStats{
-		ADV: stats.ADV / float64(token.Denominator),
-		DDV: float64(stats.DDV) / float64(token.Denominator),
+		ADV: denominateFloat(stats.ADV),
+		DDV: denominate(stats.DDV),
 	})
 }
 
@@ -490,7 +489,7 @@ func toAPIPost(p *storage.Post) *Post {
 		Text:          p.Text,
 		LikesCount:    p.Likes,
 		DislikesCount: p.Dislikes,
-		PDV:           utils.TokenToFloat64(sdk.NewInt(p.UPDV)),
+		PDV:           float64(p.UPDV) / float64(token.Denominator.Int64()),
 		CreatedAt:     uint64(p.CreatedAt.Unix()),
 	}
 }
@@ -505,7 +504,7 @@ func toAPIStats(s storage.Stats) []StatsItem {
 
 		o = append(o, StatsItem{
 			Date:  k,
-			Value: utils.TokenToFloat64(sdk.NewInt(v)),
+			Value: denominate(v),
 		})
 	}
 
@@ -522,7 +521,7 @@ func toAPIProfileStats(s *storage.ProfileStats) ProfileStats {
 
 		stats = append(stats, StatsItem{
 			Date:  k,
-			Value: utils.TokenToFloat64(utils.InitialTokenBalance().Add(sdk.NewInt(v))),
+			Value: denominate(utils.InitialTokenBalance().Int64() + v),
 		})
 	}
 
@@ -530,4 +529,12 @@ func toAPIProfileStats(s *storage.ProfileStats) ProfileStats {
 		PostsCount: s.PostsCount,
 		Stats:      stats,
 	}
+}
+
+func denominate(v int64) float64 {
+	return denominateFloat(float64(v))
+}
+
+func denominateFloat(v float64) float64 {
+	return v / float64(token.Denominator.Int64())
 }
