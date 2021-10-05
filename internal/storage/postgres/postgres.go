@@ -96,7 +96,7 @@ func (s pg) InTx(ctx context.Context, f func(s storage.Storage) error) error {
 
 func (s pg) GetHeight(ctx context.Context) (uint64, error) {
 	var h uint64
-	if err := sqlx.GetContext(ctx, s.ext, &h, `SELECT height FROM height FOR KEY SHARE`); err != nil {
+	if err := sqlx.GetContext(ctx, s.ext, &h, `SELECT height FROM height`); err != nil {
 		return 0, fmt.Errorf("failed to query: %w", err)
 	}
 
