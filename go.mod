@@ -15,8 +15,8 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.12.2
 	github.com/golang/mock v1.4.4
 	github.com/jessevdk/go-flags v1.4.0
-	github.com/jmoiron/sqlx v1.2.0
-	github.com/lib/pq v1.3.0
+	github.com/jmoiron/sqlx v1.3.4
+	github.com/lib/pq v1.10.3
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
 	github.com/testcontainers/testcontainers-go v0.8.0
