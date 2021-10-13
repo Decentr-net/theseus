@@ -63,32 +63,31 @@ func (p *postDTO) toStorage() *storage.Post {
 	return &o
 }
 
-func (s pg) InTx(ctx context.Context, f func(s storage.Storage) error) error {
+func (s pg) InTx(ctx context.Context, f func(s storage.Storage) error) (err error) {
 	db, ok := s.ext.(*sqlx.DB)
 	if !ok {
 		return errBeginCalledWithinTx
 	}
 
-	tx, err := db.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
+	tx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create tx: %w", err)
 	}
 
-	if err := func(s storage.Storage) error {
-		if err := f(s); err != nil {
-			return err
+	defer func() {
+		if err != nil {
+			if err := tx.Rollback(); err != nil {
+				log.WithError(err).Error("failed to rollback tx")
+			}
 		}
+	}()
 
-		return nil
-	}(pg{ext: tx}); err != nil {
-		if err := tx.Rollback(); err != nil {
-			log.WithError(err).Error("failed to rollback tx")
-		}
+	if err := f(pg{ext: tx}); err != nil {
 		return err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commint tx: %w", err)
+		return fmt.Errorf("failed to commit tx: %w", err)
 	}
 
 	return nil
