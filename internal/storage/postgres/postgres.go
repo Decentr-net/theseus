@@ -111,15 +111,15 @@ func (s pg) SetHeight(ctx context.Context, height uint64) error {
 }
 
 func (s pg) RefreshViews(ctx context.Context) error {
-	if _, err := s.ext.ExecContext(ctx, `REFRESH MATERIALIZED VIEW CONCURRENTLY calculated_post`); err != nil {
+	if _, err := s.ext.ExecContext(ctx, `REFRESH MATERIALIZED VIEW calculated_post`); err != nil {
 		return fmt.Errorf("failed to refresh calculated_post view: failed to exec: %w", err)
 	}
 
-	if _, err := s.ext.ExecContext(ctx, `REFRESH MATERIALIZED VIEW CONCURRENTLY stats`); err != nil {
+	if _, err := s.ext.ExecContext(ctx, `REFRESH MATERIALIZED VIEW stats`); err != nil {
 		return fmt.Errorf("failed to refresh stats view: failed to exec: %w", err)
 	}
 
-	if _, err := s.ext.ExecContext(ctx, `REFRESH MATERIALIZED VIEW CONCURRENTLY pdv_stats`); err != nil {
+	if _, err := s.ext.ExecContext(ctx, `REFRESH MATERIALIZED VIEW pdv_stats`); err != nil {
 		return fmt.Errorf("failed to refresh pdv_stats view: failed to exec: %w", err)
 	}
 
