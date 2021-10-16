@@ -335,13 +335,13 @@ github.com/inconshreveable/mousetrap
 github.com/jessevdk/go-flags
 # github.com/jmhodges/levigo v1.0.0
 github.com/jmhodges/levigo
-# github.com/jmoiron/sqlx v1.2.0
+# github.com/jmoiron/sqlx v1.3.4
 ## explicit
 github.com/jmoiron/sqlx
 github.com/jmoiron/sqlx/reflectx
 # github.com/keybase/go-keychain v0.0.0-20190712205309-48d3d31d256d
 github.com/keybase/go-keychain
-# github.com/lib/pq v1.3.0
+# github.com/lib/pq v1.10.3
 ## explicit
 github.com/lib/pq
 github.com/lib/pq/oid
