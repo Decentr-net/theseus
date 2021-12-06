@@ -239,7 +239,39 @@ func TestPg_CreatePost(t *testing.T) {
 	require.Equal(t, expected.Category, p.Category)
 	require.Equal(t, expected.PreviewImage, p.PreviewImage)
 	require.Equal(t, expected.Text, p.Text)
+	require.NotEmpty(t, p.Slug)
 	require.Equal(t, expected.CreatedAt.UTC().Unix(), p.CreatedAt.Unix())
+}
+
+func TestPg_GetPostBySlug(t *testing.T) {
+	defer cleanup(t)
+
+	expected := storage.CreatePostParams{
+		UUID:         "1",
+		Owner:        "2",
+		Title:        "3",
+		Category:     4,
+		PreviewImage: "5",
+		Text:         "6",
+		CreatedAt:    time.Now(),
+	}
+
+	require.NoError(t, s.CreatePost(ctx, &expected))
+	require.NoError(t, s.RefreshViews(ctx))
+	p, err := s.GetPost(ctx, storage.PostID{expected.Owner, expected.UUID})
+	require.NoError(t, err)
+	require.NotEmpty(t, p.Slug)
+
+	p1, err := s.GetPostBySlug(ctx, p.Slug)
+	require.NoError(t, err)
+	require.Equal(t, expected.Owner, p1.Owner)
+	require.Equal(t, expected.UUID, p1.UUID)
+	require.Equal(t, expected.Title, p1.Title)
+	require.Equal(t, expected.Category, p1.Category)
+	require.Equal(t, expected.PreviewImage, p1.PreviewImage)
+	require.Equal(t, expected.Text, p1.Text)
+	require.Equal(t, p.Slug, p1.Slug)
+	require.Equal(t, expected.CreatedAt.UTC().Unix(), p1.CreatedAt.Unix())
 }
 
 func TestPg_GetPost(t *testing.T) {

@@ -145,8 +145,54 @@ func (s server) listPosts(w http.ResponseWriter, r *http.Request) {
 	api.WriteOK(w, http.StatusOK, newListPostsResponse(posts, profileStats, stats, liked))
 }
 
+func (s server) getSharePostBySlug(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation GET /posts/{slug} Community GetPostBySlug
+	//
+	// Get post by slug.
+	//
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: slug
+	//   in: path
+	//   required: true
+	//   type: string
+	// responses:
+	//   '200':
+	//     description: Post
+	//     schema:
+	//       "$ref": "#/definitions/SharePost"
+	//   '404':
+	//     description: post not found
+	//     schema:
+	//       "$ref": "#/definitions/Error"
+	//   '500':
+	//     description: internal server error
+	//     schema:
+	//       "$ref": "#/definitions/Error"
+
+	slug := chi.URLParam(r, "slug")
+
+	post, err := s.s.GetPostBySlug(r.Context(), slug)
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			api.WriteError(w, http.StatusNotFound, "post not found")
+			return
+		}
+		api.WriteInternalErrorf(r.Context(), w, "failed to get post: %s", err.Error())
+		return
+	}
+
+	api.WriteOK(w, http.StatusOK, SharePost{
+		UUID:  post.UUID,
+		Owner: post.Owner,
+		Title: post.Title,
+	})
+}
+
 func (s server) getPost(w http.ResponseWriter, r *http.Request) {
-	// swagger:operation GET /posts/{owner}/{uuid} Community GetPost
+	// swagger:operation GET /posts/{owner}/{uuid} Community GetPostByID
 	//
 	// Get post by owner and uuid.
 	//
@@ -169,11 +215,15 @@ func (s server) getPost(w http.ResponseWriter, r *http.Request) {
 	//   example: decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz
 	// responses:
 	//   '200':
-	//     description: Posts
+	//     description: Post
 	//     schema:
-	//       "$ref": "#/definitions/ListPostsResponse"
+	//       "$ref": "#/definitions/GetPostResponse"
 	//   '400':
 	//     description: bad request
+	//     schema:
+	//       "$ref": "#/definitions/Error"
+	//   '404':
+	//     description: post not found
 	//     schema:
 	//       "$ref": "#/definitions/Error"
 	//   '500':
@@ -490,6 +540,7 @@ func toAPIPost(p *storage.Post) *Post {
 		LikesCount:    p.Likes,
 		DislikesCount: p.Dislikes,
 		PDV:           float64(p.UPDV) / float64(token.Denominator.Int64()),
+		Slug:          p.Slug,
 		CreatedAt:     uint64(p.CreatedAt.Unix()),
 	}
 }

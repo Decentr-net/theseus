@@ -39,6 +39,7 @@ type postDTO struct {
 	Likes        uint32    `db:"likes"`
 	Dislikes     uint32    `db:"dislikes"`
 	UPDV         int64     `db:"updv"`
+	Slug         string    `db:"slug"`
 }
 
 func (p *postDTO) toStorage() *storage.Post {
@@ -53,6 +54,7 @@ func (p *postDTO) toStorage() *storage.Post {
 		Dislikes:     p.Dislikes,
 		UPDV:         p.UPDV,
 		CreatedAt:    p.CreatedAt,
+		Slug:         p.Slug,
 	}
 
 	// return post consistent with blockchain
@@ -211,11 +213,31 @@ func (s pg) GetPost(ctx context.Context, id storage.PostID) (*storage.Post, erro
 	var p postDTO
 
 	if err := sqlx.GetContext(ctx, s.ext, &p, `
-			SELECT owner, uuid, title, category, preview_image, text, created_at, likes, dislikes, updv
+			SELECT owner, uuid, title, category, preview_image, text, created_at, likes, dislikes, updv, slug
 			FROM calculated_post
 			WHERE owner = $1 AND uuid = $2
 		`,
 		id.Owner, id.UUID,
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, storage.ErrNotFound
+		}
+
+		return nil, fmt.Errorf("failed to query: %w", err)
+	}
+
+	return p.toStorage(), nil
+}
+
+func (s pg) GetPostBySlug(ctx context.Context, slug string) (*storage.Post, error) {
+	var p postDTO
+
+	if err := sqlx.GetContext(ctx, s.ext, &p, `
+			SELECT owner, uuid, title, category, preview_image, text, created_at, likes, dislikes, updv, slug
+			FROM calculated_post
+			WHERE slug = $1
+		`,
+		slug,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, storage.ErrNotFound
@@ -330,7 +352,7 @@ func (s pg) ListPosts(ctx context.Context, p *storage.ListPostsParams) ([]*stora
 
 	b.WriteString(`
 		SELECT
-			owner, uuid, title, category, preview_image, text, created_at, likes, dislikes, updv
+			owner, uuid, title, category, preview_image, text, created_at, likes, dislikes, updv, slug
 		FROM calculated_post
 	`)
 
