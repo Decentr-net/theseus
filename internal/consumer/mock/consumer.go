@@ -33,6 +33,35 @@ func (m *MockConsumer) EXPECT() *MockConsumerMockRecorder {
 	return m.recorder
 }
 
+// Ping mocks base method
+func (m *MockConsumer) Ping(ctx context.Context) (interface{}, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Ping", ctx)
+	ret0, _ := ret[0].(interface{})
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Ping indicates an expected call of Ping
+func (mr *MockConsumerMockRecorder) Ping(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockConsumer)(nil).Ping), ctx)
+}
+
+// Name mocks base method
+func (m *MockConsumer) Name() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Name")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Name indicates an expected call of Name
+func (mr *MockConsumerMockRecorder) Name() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Name", reflect.TypeOf((*MockConsumer)(nil).Name))
+}
+
 // Run mocks base method
 func (m *MockConsumer) Run(ctx context.Context) error {
 	m.ctrl.T.Helper()

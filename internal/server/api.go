@@ -36,8 +36,17 @@ type Post struct {
 	LikesCount    uint32                `json:"likesCount"`
 	DislikesCount uint32                `json:"dislikesCount"`
 	PDV           float64               `json:"pdv"`
+	Slug          string                `json:"slug"`
 	LikeWeight    *community.LikeWeight `json:"likeWeight,omitempty"`
 	CreatedAt     uint64                `json:"createdAt"`
+}
+
+// SharePost ...
+// swagger:model
+type SharePost struct {
+	UUID  string `json:"uuid"`
+	Owner string `json:"owner"`
+	Title string `json:"title"`
 }
 
 // ProfileStats ...

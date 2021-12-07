@@ -54,6 +54,7 @@ func Test_listPosts(t *testing.T) {
 			PreviewImage: "preview",
 			Text:         "text",
 			CreatedAt:    timestamp,
+			Slug:         "slug1",
 			Likes:        1,
 			Dislikes:     2,
 			UPDV:         3,
@@ -66,6 +67,7 @@ func Test_listPosts(t *testing.T) {
 			PreviewImage: "preview2",
 			Text:         "text2",
 			CreatedAt:    timestamp,
+			Slug:         "slug2",
 			Likes:        1,
 			Dislikes:     2,
 			UPDV:         3,
@@ -125,6 +127,7 @@ func Test_listPosts(t *testing.T) {
          "likesCount":1,
          "dislikesCount":2,
          "pdv":3e-6,
+         "slug": "slug1",
          "likeWeight": 0,
          "createdAt":100
       },
@@ -138,7 +141,8 @@ func Test_listPosts(t *testing.T) {
          "likesCount":1,
          "dislikesCount":2,
          "pdv":3e-6,
-		 "likeWeight": 1,
+         "slug": "slug2",
+         "likeWeight": 1,
          "createdAt":100
       }
    ],
@@ -185,6 +189,7 @@ func Test_getPost(t *testing.T) {
 		PreviewImage: "preview",
 		Text:         "text",
 		CreatedAt:    timestamp,
+		Slug:         "slug",
 		Likes:        1,
 		Dislikes:     2,
 		UPDV:         3,
@@ -232,6 +237,7 @@ func Test_getPost(t *testing.T) {
 		"text":"text",
 		"likesCount":1,
 		"dislikesCount":2,
+		"slug": "slug",
 		"pdv":3e-6,
 		"likeWeight": -1,
 		"createdAt":3000
@@ -244,6 +250,48 @@ func Test_getPost(t *testing.T) {
 		{ "date":"1970-01-01", "value":1e-6 }
 	]
 }
+`, w.Body.String())
+}
+
+func Test_getSharePostBySlug(t *testing.T) {
+	timestamp := time.Unix(3000, 0)
+
+	r, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/posts/%s", "slug"), nil)
+	require.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	srv := mock.NewMockStorage(ctrl)
+
+	srv.EXPECT().GetPostBySlug(gomock.Any(), "slug").Return(&storage.Post{
+		UUID:         "uuid",
+		Owner:        "owner",
+		Title:        "title",
+		Category:     1,
+		PreviewImage: "preview",
+		Text:         "text",
+		CreatedAt:    timestamp,
+		Slug:         "slug",
+		Likes:        1,
+		Dislikes:     2,
+		UPDV:         3,
+	}, nil)
+
+	router := chi.NewRouter()
+	s := server{s: srv}
+	router.Get("/v1/posts/{slug}", s.getSharePostBySlug)
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	assert.JSONEq(t, `
+	{
+		"uuid":"uuid",
+		"owner":"owner",
+		"title":"title"
+	}
 `, w.Body.String())
 }
 

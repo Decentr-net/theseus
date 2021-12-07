@@ -143,7 +143,7 @@
           "Community"
         ],
         "summary": "Get post by owner and uuid.",
-        "operationId": "GetPost",
+        "operationId": "GetPostByID",
         "parameters": [
           {
             "type": "string",
@@ -166,13 +166,59 @@
         ],
         "responses": {
           "200": {
-            "description": "Posts",
+            "description": "Post",
             "schema": {
-              "$ref": "#/definitions/ListPostsResponse"
+              "$ref": "#/definitions/GetPostResponse"
             }
           },
           "400": {
             "description": "bad request",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "404": {
+            "description": "post not found",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "500": {
+            "description": "internal server error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/posts/{slug}": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Community"
+        ],
+        "summary": "Get post by slug.",
+        "operationId": "GetPostBySlug",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "slug",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Post",
+            "schema": {
+              "$ref": "#/definitions/SharePost"
+            }
+          },
+          "404": {
+            "description": "post not found",
             "schema": {
               "$ref": "#/definitions/Error"
             }
@@ -389,6 +435,10 @@
           "type": "string",
           "x-go-name": "PreviewImage"
         },
+        "slug": {
+          "type": "string",
+          "x-go-name": "Slug"
+        },
         "text": {
           "type": "string",
           "x-go-name": "Text"
@@ -419,6 +469,25 @@
             "$ref": "#/definitions/StatsItem"
           },
           "x-go-name": "Stats"
+        }
+      },
+      "x-go-package": "github.com/Decentr-net/theseus/internal/server"
+    },
+    "SharePost": {
+      "type": "object",
+      "title": "SharePost ...",
+      "properties": {
+        "owner": {
+          "type": "string",
+          "x-go-name": "Owner"
+        },
+        "title": {
+          "type": "string",
+          "x-go-name": "Title"
+        },
+        "uuid": {
+          "type": "string",
+          "x-go-name": "UUID"
         }
       },
       "x-go-package": "github.com/Decentr-net/theseus/internal/server"

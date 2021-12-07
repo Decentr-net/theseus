@@ -27,6 +27,7 @@ type Storage interface {
 	ListPosts(ctx context.Context, p *ListPostsParams) ([]*Post, error)
 	CreatePost(ctx context.Context, p *CreatePostParams) error
 	GetPost(ctx context.Context, id PostID) (*Post, error)
+	GetPostBySlug(ctx context.Context, slug string) (*Post, error)
 	DeletePost(ctx context.Context, id PostID, timestamp time.Time, deletedBy string) error
 
 	GetLikes(ctx context.Context, likedBy string, id ...PostID) (map[PostID]community.LikeWeight, error)
@@ -109,6 +110,7 @@ type Post struct {
 	Likes        uint32
 	Dislikes     uint32
 	UPDV         int64
+	Slug         string
 }
 
 // ProfileStats ...

@@ -165,6 +165,21 @@ func (mr *MockStorageMockRecorder) GetPost(ctx, id interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPost", reflect.TypeOf((*MockStorage)(nil).GetPost), ctx, id)
 }
 
+// GetPostBySlug mocks base method
+func (m *MockStorage) GetPostBySlug(ctx context.Context, slug string) (*storage.Post, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPostBySlug", ctx, slug)
+	ret0, _ := ret[0].(*storage.Post)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPostBySlug indicates an expected call of GetPostBySlug
+func (mr *MockStorageMockRecorder) GetPostBySlug(ctx, slug interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPostBySlug", reflect.TypeOf((*MockStorage)(nil).GetPostBySlug), ctx, slug)
+}
+
 // DeletePost mocks base method
 func (m *MockStorage) DeletePost(ctx context.Context, id storage.PostID, timestamp time.Time, deletedBy string) error {
 	m.ctrl.T.Helper()
