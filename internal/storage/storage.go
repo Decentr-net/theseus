@@ -14,6 +14,9 @@ import (
 // ErrNotFound ...
 var ErrNotFound = fmt.Errorf("not found")
 
+// PDVDenominator is used to guarantee precision for storing pdv with int64.
+const PDVDenominator = 1000000
+
 // Storage provides methods for interacting with database.
 type Storage interface {
 	InTx(ctx context.Context, f func(s Storage) error) error
@@ -27,6 +30,7 @@ type Storage interface {
 	ListPosts(ctx context.Context, p *ListPostsParams) ([]*Post, error)
 	CreatePost(ctx context.Context, p *CreatePostParams) error
 	GetPost(ctx context.Context, id PostID) (*Post, error)
+	GetPostBySlug(ctx context.Context, slug string) (*Post, error)
 	DeletePost(ctx context.Context, id PostID, timestamp time.Time, deletedBy string) error
 
 	GetLikes(ctx context.Context, likedBy string, id ...PostID) (map[PostID]community.LikeWeight, error)
@@ -109,6 +113,7 @@ type Post struct {
 	Likes        uint32
 	Dislikes     uint32
 	UPDV         int64
+	Slug         string
 }
 
 // ProfileStats ...

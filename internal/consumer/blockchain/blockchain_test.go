@@ -6,15 +6,16 @@ import (
 	"testing"
 	"time"
 
+	ctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth"
+	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/Decentr-net/ariadne"
 	ariadnemock "github.com/Decentr-net/ariadne/mock"
-	community "github.com/Decentr-net/decentr/x/community/types"
-	operations "github.com/Decentr-net/decentr/x/operations/types"
+	communitytypes "github.com/Decentr-net/decentr/x/community/types"
+	operationstypes "github.com/Decentr-net/decentr/x/operations/types"
 
 	"github.com/Decentr-net/theseus/internal/storage"
 	storagemock "github.com/Decentr-net/theseus/internal/storage/mock"
@@ -65,20 +66,22 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 	}{
 		{
 			name: "create_post",
-			msg: community.MsgCreatePost{
-				UUID:         "1234",
-				Owner:        owner,
-				Title:        "title",
-				Category:     community.WorldNewsCategory,
-				PreviewImage: "url",
-				Text:         "text",
+			msg: &communitytypes.MsgCreatePost{
+				Post: communitytypes.Post{
+					Uuid:         "1234",
+					Owner:        owner,
+					Title:        "title",
+					Category:     communitytypes.Category_CATEGORY_WORLD_NEWS,
+					PreviewImage: "url",
+					Text:         "text",
+				},
 			},
 			expect: func(s *storagemock.MockStorage) {
 				s.EXPECT().CreatePost(gomock.Any(), &storage.CreatePostParams{
 					UUID:         "1234",
 					Owner:        "decentr1u9slwz3sje8j94ccpwlslflg0506yc8y2ylmtz",
 					Title:        "title",
-					Category:     community.WorldNewsCategory,
+					Category:     communitytypes.Category_CATEGORY_WORLD_NEWS,
 					PreviewImage: "url",
 					Text:         "text",
 					CreatedAt:    timestamp,
@@ -87,22 +90,24 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 		},
 		{
 			name: "like_post",
-			msg: community.MsgSetLike{
-				PostOwner: owner,
-				PostUUID:  "1234",
-				Owner:     owner,
-				Weight:    community.LikeWeightDown,
+			msg: &communitytypes.MsgSetLike{
+				Like: communitytypes.Like{
+					PostOwner: owner,
+					PostUuid:  "1234",
+					Owner:     owner,
+					Weight:    communitytypes.LikeWeight_LIKE_WEIGHT_DOWN,
+				},
 			},
 			expect: func(s *storagemock.MockStorage) {
 				// nolint
 				s.EXPECT().GetLikes(gomock.Any(), owner.String(), storage.PostID{
 					Owner: owner.String(),
 					UUID:  "1234",
-				}).Return(map[storage.PostID]community.LikeWeight{
+				}).Return(map[storage.PostID]communitytypes.LikeWeight{
 					storage.PostID{
 						Owner: owner.String(),
 						UUID:  "1234",
-					}: community.LikeWeightUp,
+					}: communitytypes.LikeWeight_LIKE_WEIGHT_UP,
 				}, nil)
 
 				s.EXPECT().AddPDV(gomock.Any(), owner.String(), int64(-2), timestamp).Return(nil)
@@ -112,7 +117,7 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 				s.EXPECT().SetLike(
 					gomock.Any(),
 					storage.PostID{Owner: "decentr1u9slwz3sje8j94ccpwlslflg0506yc8y2ylmtz", UUID: "1234"},
-					community.LikeWeightDown,
+					communitytypes.LikeWeight_LIKE_WEIGHT_DOWN,
 					timestamp,
 					"decentr1u9slwz3sje8j94ccpwlslflg0506yc8y2ylmtz",
 				)
@@ -120,9 +125,9 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 		},
 		{
 			name: "delete_post",
-			msg: community.MsgDeletePost{
+			msg: &communitytypes.MsgDeletePost{
 				PostOwner: owner,
-				PostUUID:  "1234",
+				PostUuid:  "1234",
 				Owner:     owner,
 			},
 			expect: func(s *storagemock.MockStorage) {
@@ -135,7 +140,7 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 		},
 		{
 			name: "follow",
-			msg: community.MsgFollow{
+			msg: &communitytypes.MsgFollow{
 				Owner: owner,
 				Whom:  owner2,
 			},
@@ -145,7 +150,7 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 		},
 		{
 			name: "unfollow",
-			msg: community.MsgUnfollow{
+			msg: &communitytypes.MsgUnfollow{
 				Owner: owner,
 				Whom:  owner2,
 			},
@@ -155,16 +160,16 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 		},
 		{
 			name: "distribute_rewards",
-			msg: operations.MsgDistributeRewards{
+			msg: &operationstypes.MsgDistributeRewards{
 				Owner: owner,
-				Rewards: []operations.Reward{
+				Rewards: []operationstypes.Reward{
 					{
 						Receiver: owner,
-						Reward:   100,
+						Reward:   sdk.DecProto{Dec: sdk.NewDecWithPrec(100, 6)},
 					},
 					{
 						Receiver: owner2,
-						Reward:   10,
+						Reward:   sdk.DecProto{Dec: sdk.NewDecWithPrec(10, 6)},
 					},
 				},
 			},
@@ -175,9 +180,9 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 		},
 		{
 			name: "wipe_account",
-			msg: operations.MsgResetAccount{
-				Owner:        owner,
-				AccountOwner: owner,
+			msg: &operationstypes.MsgResetAccount{
+				Owner:   owner,
+				Address: owner,
 			},
 			expect: func(s *storagemock.MockStorage) {
 				s.EXPECT().ResetAccount(gomock.Any(), owner.String())
@@ -199,12 +204,18 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 			s.EXPECT().RefreshViews(gomock.Any()).Return(nil)
 			tc.expect(s)
 
+			msg, err := ctypes.NewAnyWithValue(tc.msg)
+			require.NoError(t, err)
 			block := ariadne.Block{
 				Height: 1,
 				Time:   timestamp,
 				Txs: []sdk.Tx{
-					auth.StdTx{
-						Msgs: []sdk.Msg{tc.msg},
+					&tx.Tx{
+						Body: &tx.TxBody{
+							Messages: []*ctypes.Any{
+								msg,
+							},
+						},
 					},
 				},
 			}
