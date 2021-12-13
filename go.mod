@@ -1,6 +1,6 @@
 module github.com/Decentr-net/theseus
 
-go 1.15
+go 1.16
 
 require (
 	github.com/Decentr-net/ariadne v1.1.0
