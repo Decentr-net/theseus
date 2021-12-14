@@ -14,6 +14,9 @@ import (
 // ErrNotFound ...
 var ErrNotFound = fmt.Errorf("not found")
 
+// PDVDenominator is used to guarantee precision for storing pdv with int64.
+const PDVDenominator = 1000000
+
 // Storage provides methods for interacting with database.
 type Storage interface {
 	InTx(ctx context.Context, f func(s Storage) error) error

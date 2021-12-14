@@ -26,7 +26,7 @@ Theseus provides Decentr community off-chain functionality.
 | postgres.max_open_connections    | POSTGRES_MAX_OPEN_CONNECTIONS    | 0 | true | postgres maximal open connections count, 0 means unlimited
 | postgres.max_idle_connections    | POSTGRES_MAX_IDLE_CONNECTIONS    | 5 | true | postgres maximal idle connections count
 | postgres.migrations    | POSTGRES_MIGRATIONS    | /migrations/postgres | true | postgres migrations directory
-| blockchain.node   | BLOCKCHAIN_NODE    | http://zeus.testnet.decentr.xyz:26657 | true | decentr node address
+| blockchain.node   | BLOCKCHAIN_NODE    | zeus.testnet.decentr.xyz:9090 | true | decentr grpc node address
 | blockchain.timeout   | BLOCKCHAIN_TIMEOUT    | 5s| true | timeout for requests to blockchain node
 | blockchain.retry_interval   | BLOCKCHAIN_RETRY_INTERVAL    | 2s | true | interval to be waited on error before retry
 | blockchain.last_block_retry_interval   | BLOCKCHAIN_LAST_BLOCK_RETRY_INTERVAL    | 1s | true | duration to be waited when new block isn't produced before retry

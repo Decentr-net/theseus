@@ -24,7 +24,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	community "github.com/Decentr-net/decentr/x/community/types"
-	"github.com/Decentr-net/decentr/x/utils"
 
 	"github.com/Decentr-net/theseus/internal/storage"
 )
@@ -178,8 +177,8 @@ func TestPg_GetProfileStats(t *testing.T) {
 	now := time.Now()
 	yersterday := time.Now().Add(-time.Hour * 24)
 
-	require.NoError(t, s.AddPDV(ctx, "address", utils.InitialTokenBalance().Int64(), time.Time{}))
-	require.NoError(t, s.AddPDV(ctx, "address_1", utils.InitialTokenBalance().Int64(), time.Time{}))
+	require.NoError(t, s.AddPDV(ctx, "address", storage.PDVDenominator, time.Time{}))
+	require.NoError(t, s.AddPDV(ctx, "address_1", storage.PDVDenominator, time.Time{}))
 
 	require.NoError(t, s.AddPDV(ctx, "address", 10, yersterday))
 	require.NoError(t, s.AddPDV(ctx, "address", 10, now))
@@ -332,7 +331,7 @@ func TestPg_GetLiked(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, likes, 1)
 
-	require.Equal(t, community.LikeWeightDown, likes[storage.PostID{"1", "1"}])
+	require.Equal(t, community.LikeWeight_LIKE_WEIGHT_DOWN, likes[storage.PostID{"1", "1"}])
 }
 
 func TestPg_SetLike(t *testing.T) {

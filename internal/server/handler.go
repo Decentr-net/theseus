@@ -11,8 +11,6 @@ import (
 	"github.com/go-chi/chi"
 
 	community "github.com/Decentr-net/decentr/x/community/types"
-	token "github.com/Decentr-net/decentr/x/token/types"
-	"github.com/Decentr-net/decentr/x/utils"
 	"github.com/Decentr-net/go-api"
 
 	"github.com/Decentr-net/theseus/internal/storage"
@@ -401,7 +399,7 @@ func extractListParamsFromQuery(q url.Values) (*storage.ListPostsParams, error) 
 		}
 
 		c := community.Category(v)
-		if c == community.UndefinedCategory || c > community.SportsCategory {
+		if c == community.Category_CATEGORY_UNDEFINED || c > community.Category_CATEGORY_SPORTS {
 			return nil, fmt.Errorf("%w: invalid category value", errInvalidRequest)
 		}
 		out.Category = &c
@@ -539,7 +537,7 @@ func toAPIPost(p *storage.Post) *Post {
 		Text:          p.Text,
 		LikesCount:    p.Likes,
 		DislikesCount: p.Dislikes,
-		PDV:           float64(p.UPDV) / float64(token.Denominator.Int64()),
+		PDV:           float64(p.UPDV) / float64(storage.PDVDenominator),
 		Slug:          p.Slug,
 		CreatedAt:     uint64(p.CreatedAt.Unix()),
 	}
@@ -572,7 +570,7 @@ func toAPIProfileStats(s *storage.ProfileStats) ProfileStats {
 
 		stats = append(stats, StatsItem{
 			Date:  k,
-			Value: denominate(utils.InitialTokenBalance().Int64() + v),
+			Value: denominate(storage.PDVDenominator + v),
 		})
 	}
 
@@ -587,5 +585,5 @@ func denominate(v int64) float64 {
 }
 
 func denominateFloat(v float64) float64 {
-	return v / float64(token.Denominator.Int64())
+	return v / float64(storage.PDVDenominator)
 }

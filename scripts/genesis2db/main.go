@@ -3,15 +3,16 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"time"
 
-	"github.com/Decentr-net/decentr/app"
-	"github.com/Decentr-net/decentr/x/community"
-	"github.com/Decentr-net/decentr/x/token"
-	"github.com/Decentr-net/decentr/x/utils"
+	communitytypes "github.com/Decentr-net/decentr/x/community/types"
+	tokentypes "github.com/Decentr-net/decentr/x/token/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/golang-migrate/migrate/v4"
 	migratep "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -32,8 +33,8 @@ var opts = struct {
 
 type genesis struct {
 	AppState struct {
-		Community community.GenesisState `json:"community"`
-		Token     token.GenesisState     `json:"token"`
+		Community communitytypes.GenesisState `json:"community"`
+		Token     tokentypes.GenesisState     `json:"token"`
 	} `json:"app_state"`
 }
 
@@ -62,8 +63,9 @@ func main() {
 
 	var g genesis
 
-	cdc := app.MakeCodec()
-	cdc.MustUnmarshalJSON(b, &g)
+	if err := json.Unmarshal(b, &g); err != nil {
+		logrus.WithError(err).Fatal("failed to unmarshal genesis")
+	}
 
 	db := mustGetDB()
 	s := postgres.New(db)
@@ -73,7 +75,7 @@ func main() {
 	logrus.Info("import token")
 	i := 0
 	for k, v := range g.AppState.Token.Balances {
-		if err := s.AddPDV(context.Background(), k, v.Sub(utils.InitialTokenBalance()).Int64(), t); err != nil {
+		if err := s.AddPDV(context.Background(), k, v.Dec.Sub(sdk.OneDec()).TruncateInt64()*storage.PDVDenominator, t); err != nil {
 			logrus.WithError(err).Fatal("failed to put token into db")
 		}
 
@@ -85,23 +87,23 @@ func main() {
 
 	i = 0
 	logrus.Info("import followings")
-	for follower, v := range g.AppState.Community.Followers {
-		for _, followee := range v {
-			if err := s.Follow(context.Background(), follower, followee); err != nil {
+	for follower, v := range g.AppState.Community.Following {
+		for _, followee := range v.Address {
+			if err := s.Follow(context.Background(), follower, followee.String()); err != nil {
 				logrus.WithError(err).Fatal("failed to put following into db")
 			}
 		}
 
 		i++
 		if i%20 == 0 {
-			logrus.Infof("%d of %d followers imported", i+1, len(g.AppState.Community.Followers))
+			logrus.Infof("%d of %d followers imported", i+1, len(g.AppState.Community.Following))
 		}
 	}
 
 	logrus.Info("import posts")
 	for i, v := range g.AppState.Community.Posts {
 		if err := s.CreatePost(context.Background(), &storage.CreatePostParams{
-			UUID:         v.UUID.String(),
+			UUID:         v.Uuid,
 			Owner:        v.Owner.String(),
 			Title:        v.Title,
 			Category:     v.Category,
@@ -121,7 +123,7 @@ func main() {
 	for i, v := range g.AppState.Community.Likes {
 		if err := s.SetLike(context.Background(), storage.PostID{
 			Owner: v.PostOwner.String(),
-			UUID:  v.PostUUID.String(),
+			UUID:  v.PostUuid,
 		}, v.Weight, t, v.Owner.String()); err != nil {
 			logrus.WithError(err).Fatal("failed to put like into db")
 		}

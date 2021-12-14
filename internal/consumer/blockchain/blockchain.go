@@ -11,9 +11,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Decentr-net/ariadne"
-	"github.com/Decentr-net/decentr/app"
-	community "github.com/Decentr-net/decentr/x/community/types"
-	"github.com/Decentr-net/decentr/x/operations"
+	"github.com/Decentr-net/decentr/config"
+	communitytypes "github.com/Decentr-net/decentr/x/community/types"
+	operationstypes "github.com/Decentr-net/decentr/x/operations/types"
 
 	"github.com/Decentr-net/theseus/internal/consumer"
 	"github.com/Decentr-net/theseus/internal/storage"
@@ -21,9 +21,7 @@ import (
 
 // nolint:gochecknoinits
 func init() {
-	c := sdk.GetConfig()
-	c.SetBech32PrefixForAccount(app.Bech32PrefixAccAddr, app.Bech32PrefixAccPub)
-	c.Seal()
+	config.SetAddressPrefixes()
 }
 
 var log = logrus.WithField("package", "blockchain")
@@ -84,22 +82,22 @@ func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Blo
 				var err error
 
 				switch msg := msg.(type) {
-				case community.MsgCreatePost:
-					err = processMsgCreatePost(ctx, s, block.Time, &msg)
-				case community.MsgDeletePost:
-					err = processMsgDeletePost(ctx, s, block.Time, msg)
-				case community.MsgSetLike:
-					err = processMsgSetLike(ctx, s, block.Time, msg)
-				case community.MsgFollow:
-					err = processMsgFollow(ctx, s, msg)
-				case community.MsgUnfollow:
-					err = processMsgUnfollow(ctx, s, msg)
-				case operations.MsgDistributeRewards:
-					err = processDistributeRewards(ctx, s, block.Time, &msg)
-				case operations.MsgResetAccount:
-					err = processMsgResetAccount(ctx, s, msg.AccountOwner)
+				case *communitytypes.MsgCreatePost:
+					err = processMsgCreatePost(ctx, s, block.Time, msg)
+				case *communitytypes.MsgDeletePost:
+					err = processMsgDeletePost(ctx, s, block.Time, *msg)
+				case *communitytypes.MsgSetLike:
+					err = processMsgSetLike(ctx, s, block.Time, *msg)
+				case *communitytypes.MsgFollow:
+					err = processMsgFollow(ctx, s, *msg)
+				case *communitytypes.MsgUnfollow:
+					err = processMsgUnfollow(ctx, s, *msg)
+				case *operationstypes.MsgDistributeRewards:
+					err = processDistributeRewards(ctx, s, block.Time, msg)
+				case *operationstypes.MsgResetAccount:
+					err = processMsgResetAccount(ctx, s, msg.Address)
 				default:
-					log.WithField("msg", fmt.Sprintf("%s/%s", msg.Route(), msg.Type())).Debug("skip message")
+					log.WithField("msg", msg).Debug("skip message")
 				}
 
 				if err != nil {
@@ -120,20 +118,20 @@ func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Blo
 	}
 }
 
-func processMsgCreatePost(ctx context.Context, s storage.Storage, timestamp time.Time, msg *community.MsgCreatePost) error {
+func processMsgCreatePost(ctx context.Context, s storage.Storage, timestamp time.Time, msg *communitytypes.MsgCreatePost) error {
 	return s.CreatePost(ctx, &storage.CreatePostParams{
-		UUID:         msg.UUID,
-		Owner:        msg.Owner.String(),
-		Title:        msg.Title,
-		Category:     msg.Category,
-		PreviewImage: msg.PreviewImage,
-		Text:         msg.Text,
+		UUID:         msg.Post.Uuid,
+		Owner:        msg.Post.Owner.String(),
+		Title:        msg.Post.Title,
+		Category:     msg.Post.Category,
+		PreviewImage: msg.Post.PreviewImage,
+		Text:         msg.Post.Text,
 		CreatedAt:    timestamp,
 	})
 }
 
-func processMsgDeletePost(ctx context.Context, s storage.Storage, timestamp time.Time, msg community.MsgDeletePost) error {
-	if err := s.DeletePost(ctx, storage.PostID{Owner: msg.PostOwner.String(), UUID: msg.PostUUID}, timestamp, msg.Owner.String()); err != nil {
+func processMsgDeletePost(ctx context.Context, s storage.Storage, timestamp time.Time, msg communitytypes.MsgDeletePost) error {
+	if err := s.DeletePost(ctx, storage.PostID{Owner: msg.PostOwner.String(), UUID: msg.PostUuid}, timestamp, msg.Owner.String()); err != nil {
 		if !errors.Is(err, storage.ErrNotFound) {
 			return err
 		}
@@ -141,27 +139,27 @@ func processMsgDeletePost(ctx context.Context, s storage.Storage, timestamp time
 	return nil
 }
 
-func processMsgSetLike(ctx context.Context, s storage.Storage, timestamp time.Time, msg community.MsgSetLike) error {
+func processMsgSetLike(ctx context.Context, s storage.Storage, timestamp time.Time, msg communitytypes.MsgSetLike) error {
 	p := storage.PostID{
-		Owner: msg.PostOwner.String(),
-		UUID:  msg.PostUUID,
+		Owner: msg.Like.PostOwner.String(),
+		UUID:  msg.Like.PostUuid,
 	}
 
-	m, err := s.GetLikes(ctx, msg.Owner.String(), p)
+	m, err := s.GetLikes(ctx, msg.Like.Owner.String(), p)
 	if err != nil {
 		return fmt.Errorf("failed to get like: %w", err)
 	}
 
-	previousWeight := community.LikeWeightZero
+	previousWeight := communitytypes.LikeWeight_LIKE_WEIGHT_ZERO
 	if l, ok := m[p]; ok {
 		previousWeight = l
 	}
 
-	if err := s.AddPDV(ctx, msg.PostOwner.String(), int64(msg.Weight-previousWeight), timestamp); err != nil {
+	if err := s.AddPDV(ctx, msg.Like.PostOwner.String(), int64(msg.Like.Weight-previousWeight), timestamp); err != nil {
 		return fmt.Errorf("failed to add pdv to profile stats: %w", err)
 	}
 
-	postID := storage.PostID{Owner: msg.PostOwner.String(), UUID: msg.PostUUID}
+	postID := storage.PostID{Owner: msg.Like.PostOwner.String(), UUID: msg.Like.PostUuid}
 
 	// check the related post exists
 	if _, err := s.GetPost(ctx, postID); err != nil {
@@ -172,20 +170,20 @@ func processMsgSetLike(ctx context.Context, s storage.Storage, timestamp time.Ti
 		return err
 	}
 
-	return s.SetLike(ctx, postID, msg.Weight, timestamp, msg.Owner.String())
+	return s.SetLike(ctx, postID, msg.Like.Weight, timestamp, msg.Like.Owner.String())
 }
 
-func processMsgFollow(ctx context.Context, s storage.Storage, msg community.MsgFollow) error {
+func processMsgFollow(ctx context.Context, s storage.Storage, msg communitytypes.MsgFollow) error {
 	return s.Follow(ctx, msg.Owner.String(), msg.Whom.String())
 }
 
-func processMsgUnfollow(ctx context.Context, s storage.Storage, msg community.MsgUnfollow) error {
+func processMsgUnfollow(ctx context.Context, s storage.Storage, msg communitytypes.MsgUnfollow) error {
 	return s.Unfollow(ctx, msg.Owner.String(), msg.Whom.String())
 }
 
-func processDistributeRewards(ctx context.Context, s storage.Storage, timestamp time.Time, msg *operations.MsgDistributeRewards) error {
+func processDistributeRewards(ctx context.Context, s storage.Storage, timestamp time.Time, msg *operationstypes.MsgDistributeRewards) error {
 	for _, v := range msg.Rewards { // nolint:gocritic
-		if err := s.AddPDV(ctx, v.Receiver.String(), int64(v.Reward), timestamp); err != nil {
+		if err := s.AddPDV(ctx, v.Receiver.String(), v.Reward.Dec.MulInt64(storage.PDVDenominator).TruncateInt64(), timestamp); err != nil {
 			return fmt.Errorf("failed to add pdv: %w", err)
 		}
 	}
