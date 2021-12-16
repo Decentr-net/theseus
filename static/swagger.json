@@ -12,7 +12,7 @@
   "info": {
     "description": "The Theseus is an off-chain service which provides access to community entities (posts, likes, follows)",
     "title": "Theseus",
-    "version": "1.0.1"
+    "version": "1.2.1"
   },
   "basePath": "/v1",
   "paths": {
@@ -308,7 +308,7 @@
   "definitions": {
     "Category": {
       "type": "integer",
-      "format": "uint8",
+      "format": "int32",
       "x-go-package": "github.com/Decentr-net/decentr/x/community/types"
     },
     "DecentrStats": {
@@ -361,7 +361,7 @@
     },
     "LikeWeight": {
       "type": "integer",
-      "format": "int8",
+      "format": "int32",
       "x-go-package": "github.com/Decentr-net/decentr/x/community/types"
     },
     "ListPostsResponse": {

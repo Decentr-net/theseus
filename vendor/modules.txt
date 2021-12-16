@@ -9,7 +9,7 @@ github.com/Azure/go-ansiterm/winterm
 github.com/ChainSafe/go-schnorrkel
 # github.com/DataDog/zstd v1.4.5
 github.com/DataDog/zstd
-# github.com/Decentr-net/ariadne v1.1.0
+# github.com/Decentr-net/ariadne v1.1.1
 ## explicit
 github.com/Decentr-net/ariadne
 github.com/Decentr-net/ariadne/mock

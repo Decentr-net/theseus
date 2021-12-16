@@ -3,7 +3,7 @@ module github.com/Decentr-net/theseus
 go 1.16
 
 require (
-	github.com/Decentr-net/ariadne v1.1.0
+	github.com/Decentr-net/ariadne v1.1.1
 	github.com/Decentr-net/decentr v1.5.0
 	github.com/Decentr-net/go-api v0.1.0
 	github.com/Decentr-net/logrus v0.7.2
