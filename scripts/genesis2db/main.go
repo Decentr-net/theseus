@@ -89,7 +89,7 @@ func main() {
 	logrus.Info("import followings")
 	for follower, v := range g.AppState.Community.Following {
 		for _, followee := range v.Address {
-			if err := s.Follow(context.Background(), follower, followee.String()); err != nil {
+			if err := s.Follow(context.Background(), follower, followee); err != nil {
 				logrus.WithError(err).Fatal("failed to put following into db")
 			}
 		}
@@ -104,7 +104,7 @@ func main() {
 	for i, v := range g.AppState.Community.Posts {
 		if err := s.CreatePost(context.Background(), &storage.CreatePostParams{
 			UUID:         v.Uuid,
-			Owner:        v.Owner.String(),
+			Owner:        v.Owner,
 			Title:        v.Title,
 			Category:     v.Category,
 			PreviewImage: v.PreviewImage,
@@ -122,9 +122,9 @@ func main() {
 	logrus.Info("import likes")
 	for i, v := range g.AppState.Community.Likes {
 		if err := s.SetLike(context.Background(), storage.PostID{
-			Owner: v.PostOwner.String(),
+			Owner: v.PostOwner,
 			UUID:  v.PostUuid,
-		}, v.Weight, t, v.Owner.String()); err != nil {
+		}, v.Weight, t, v.Owner); err != nil {
 			logrus.WithError(err).Fatal("failed to put like into db")
 		}
 

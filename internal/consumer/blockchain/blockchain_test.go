@@ -69,7 +69,7 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 			msg: &communitytypes.MsgCreatePost{
 				Post: communitytypes.Post{
 					Uuid:         "1234",
-					Owner:        owner,
+					Owner:        owner.String(),
 					Title:        "title",
 					Category:     communitytypes.Category_CATEGORY_WORLD_NEWS,
 					PreviewImage: "url",
@@ -92,9 +92,9 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 			name: "like_post",
 			msg: &communitytypes.MsgSetLike{
 				Like: communitytypes.Like{
-					PostOwner: owner,
+					PostOwner: owner.String(),
 					PostUuid:  "1234",
-					Owner:     owner,
+					Owner:     owner.String(),
 					Weight:    communitytypes.LikeWeight_LIKE_WEIGHT_DOWN,
 				},
 			},
@@ -126,9 +126,9 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 		{
 			name: "delete_post",
 			msg: &communitytypes.MsgDeletePost{
-				PostOwner: owner,
+				PostOwner: owner.String(),
 				PostUuid:  "1234",
-				Owner:     owner,
+				Owner:     owner.String(),
 			},
 			expect: func(s *storagemock.MockStorage) {
 				s.EXPECT().DeletePost(gomock.Any(),
@@ -141,8 +141,8 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 		{
 			name: "follow",
 			msg: &communitytypes.MsgFollow{
-				Owner: owner,
-				Whom:  owner2,
+				Owner: owner.String(),
+				Whom:  owner2.String(),
 			},
 			expect: func(s *storagemock.MockStorage) {
 				s.EXPECT().Follow(gomock.Any(), owner.String(), owner2.String())
@@ -151,8 +151,8 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 		{
 			name: "unfollow",
 			msg: &communitytypes.MsgUnfollow{
-				Owner: owner,
-				Whom:  owner2,
+				Owner: owner.String(),
+				Whom:  owner2.String(),
 			},
 			expect: func(s *storagemock.MockStorage) {
 				s.EXPECT().Unfollow(gomock.Any(), owner.String(), owner2.String())
@@ -161,14 +161,14 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 		{
 			name: "distribute_rewards",
 			msg: &operationstypes.MsgDistributeRewards{
-				Owner: owner,
+				Owner: owner.String(),
 				Rewards: []operationstypes.Reward{
 					{
-						Receiver: owner,
+						Receiver: owner.String(),
 						Reward:   sdk.DecProto{Dec: sdk.NewDecWithPrec(100, 6)},
 					},
 					{
-						Receiver: owner2,
+						Receiver: owner2.String(),
 						Reward:   sdk.DecProto{Dec: sdk.NewDecWithPrec(10, 6)},
 					},
 				},
@@ -181,8 +181,8 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 		{
 			name: "wipe_account",
 			msg: &operationstypes.MsgResetAccount{
-				Owner:   owner,
-				Address: owner,
+				Owner:   owner.String(),
+				Address: owner.String(),
 			},
 			expect: func(s *storagemock.MockStorage) {
 				s.EXPECT().ResetAccount(gomock.Any(), owner.String())

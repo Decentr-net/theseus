@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Decentr-net/ariadne"
@@ -121,7 +120,7 @@ func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Blo
 func processMsgCreatePost(ctx context.Context, s storage.Storage, timestamp time.Time, msg *communitytypes.MsgCreatePost) error {
 	return s.CreatePost(ctx, &storage.CreatePostParams{
 		UUID:         msg.Post.Uuid,
-		Owner:        msg.Post.Owner.String(),
+		Owner:        msg.Post.Owner,
 		Title:        msg.Post.Title,
 		Category:     msg.Post.Category,
 		PreviewImage: msg.Post.PreviewImage,
@@ -131,7 +130,7 @@ func processMsgCreatePost(ctx context.Context, s storage.Storage, timestamp time
 }
 
 func processMsgDeletePost(ctx context.Context, s storage.Storage, timestamp time.Time, msg communitytypes.MsgDeletePost) error {
-	if err := s.DeletePost(ctx, storage.PostID{Owner: msg.PostOwner.String(), UUID: msg.PostUuid}, timestamp, msg.Owner.String()); err != nil {
+	if err := s.DeletePost(ctx, storage.PostID{Owner: msg.PostOwner, UUID: msg.PostUuid}, timestamp, msg.Owner); err != nil {
 		if !errors.Is(err, storage.ErrNotFound) {
 			return err
 		}
@@ -141,11 +140,11 @@ func processMsgDeletePost(ctx context.Context, s storage.Storage, timestamp time
 
 func processMsgSetLike(ctx context.Context, s storage.Storage, timestamp time.Time, msg communitytypes.MsgSetLike) error {
 	p := storage.PostID{
-		Owner: msg.Like.PostOwner.String(),
+		Owner: msg.Like.PostOwner,
 		UUID:  msg.Like.PostUuid,
 	}
 
-	m, err := s.GetLikes(ctx, msg.Like.Owner.String(), p)
+	m, err := s.GetLikes(ctx, msg.Like.Owner, p)
 	if err != nil {
 		return fmt.Errorf("failed to get like: %w", err)
 	}
@@ -155,11 +154,11 @@ func processMsgSetLike(ctx context.Context, s storage.Storage, timestamp time.Ti
 		previousWeight = l
 	}
 
-	if err := s.AddPDV(ctx, msg.Like.PostOwner.String(), int64(msg.Like.Weight-previousWeight), timestamp); err != nil {
+	if err := s.AddPDV(ctx, msg.Like.PostOwner, int64(msg.Like.Weight-previousWeight), timestamp); err != nil {
 		return fmt.Errorf("failed to add pdv to profile stats: %w", err)
 	}
 
-	postID := storage.PostID{Owner: msg.Like.PostOwner.String(), UUID: msg.Like.PostUuid}
+	postID := storage.PostID{Owner: msg.Like.PostOwner, UUID: msg.Like.PostUuid}
 
 	// check the related post exists
 	if _, err := s.GetPost(ctx, postID); err != nil {
@@ -170,20 +169,20 @@ func processMsgSetLike(ctx context.Context, s storage.Storage, timestamp time.Ti
 		return err
 	}
 
-	return s.SetLike(ctx, postID, msg.Like.Weight, timestamp, msg.Like.Owner.String())
+	return s.SetLike(ctx, postID, msg.Like.Weight, timestamp, msg.Like.Owner)
 }
 
 func processMsgFollow(ctx context.Context, s storage.Storage, msg communitytypes.MsgFollow) error {
-	return s.Follow(ctx, msg.Owner.String(), msg.Whom.String())
+	return s.Follow(ctx, msg.Owner, msg.Whom)
 }
 
 func processMsgUnfollow(ctx context.Context, s storage.Storage, msg communitytypes.MsgUnfollow) error {
-	return s.Unfollow(ctx, msg.Owner.String(), msg.Whom.String())
+	return s.Unfollow(ctx, msg.Owner, msg.Whom)
 }
 
 func processDistributeRewards(ctx context.Context, s storage.Storage, timestamp time.Time, msg *operationstypes.MsgDistributeRewards) error {
-	for _, v := range msg.Rewards { // nolint:gocritic
-		if err := s.AddPDV(ctx, v.Receiver.String(), v.Reward.Dec.MulInt64(storage.PDVDenominator).TruncateInt64(), timestamp); err != nil {
+	for _, v := range msg.Rewards {
+		if err := s.AddPDV(ctx, v.Receiver, v.Reward.Dec.MulInt64(storage.PDVDenominator).TruncateInt64(), timestamp); err != nil {
 			return fmt.Errorf("failed to add pdv: %w", err)
 		}
 	}
@@ -191,8 +190,8 @@ func processDistributeRewards(ctx context.Context, s storage.Storage, timestamp 
 	return nil
 }
 
-func processMsgResetAccount(ctx context.Context, s storage.Storage, owner sdk.AccAddress) error {
-	if err := s.ResetAccount(ctx, owner.String()); err != nil {
+func processMsgResetAccount(ctx context.Context, s storage.Storage, owner string) error {
+	if err := s.ResetAccount(ctx, owner); err != nil {
 		return fmt.Errorf("failed to wipe account: %w", err)
 	}
 
