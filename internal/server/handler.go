@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -330,6 +331,64 @@ func (s server) getProfileStats(w http.ResponseWriter, r *http.Request) {
 	api.WriteOK(w, http.StatusOK, toAPIProfileStats(stats[0]))
 }
 
+func (s server) getDDVStats(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation GET /ddv/stats DDV GetDDVStats
+	//
+	// Returns DDV stats.
+	//
+	// ---
+	// produces:
+	// - application/json
+	// responses:
+	//   '200':
+	//     description: Stats
+	//     schema:
+	//       "$ref": "#/definitions/DDVStats"
+	//   '500':
+	//     description: internal server error
+	//     schema:
+	//       "$ref": "#/definitions/Error"
+
+	totalStats, err := s.s.GetDecentrStats(r.Context())
+	if err != nil {
+		api.WriteInternalErrorf(r.Context(), w, "failed to get total stats: %s", err.Error())
+		return
+	}
+
+	ddvStats, err := s.s.GetDDVStats(r.Context())
+	if err != nil {
+		api.WriteInternalErrorf(r.Context(), w, "failed to get DDV stats: %s", err.Error())
+		return
+	}
+
+	transformStatsAsGrowth(ddvStats, totalStats.DDV)
+
+	stats := make([]StatsItem, 0, len(ddvStats))
+	for _, item := range ddvStats {
+		stats = append(stats, StatsItem{
+			Date:  item.Date.Format("2006-01-02"),
+			Value: float64(item.Value),
+		})
+	}
+
+	api.WriteOK(w, http.StatusOK, DDVStats{
+		Total: totalStats.DDV,
+		Stats: stats,
+	})
+}
+
+func transformStatsAsGrowth(stats []*storage.DDVStatsItem, total int64) {
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].Date.Before(stats[j].Date)
+	})
+
+	for i := len(stats) - 1; i >= 0; i-- {
+		v := stats[i].Value
+		stats[i].Value = total
+		total -= v
+	}
+}
+
 func (s server) getDecentrStats(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation GET /profiles/stats Profiles GetDecentrStats
 	//
@@ -494,7 +553,7 @@ func extractPostIDsFromPosts(p []*storage.Post) []storage.PostID {
 func newListPostsResponse(
 	posts []*storage.Post,
 	profileStats []*storage.ProfileStats,
-	stats map[storage.PostID]storage.Stats,
+	stats map[storage.PostID]storage.PostStats,
 	liked map[storage.PostID]community.LikeWeight,
 ) ListPostsResponse {
 	out := ListPostsResponse{}
@@ -543,7 +602,7 @@ func toAPIPost(p *storage.Post) *Post {
 	}
 }
 
-func toAPIStats(s storage.Stats) []StatsItem {
+func toAPIStats(s storage.PostStats) []StatsItem {
 	o := make([]StatsItem, 0, len(s))
 
 	for k, v := range s {

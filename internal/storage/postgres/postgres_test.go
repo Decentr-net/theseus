@@ -1,4 +1,5 @@
-//+build integration
+//go:build integration
+// +build integration
 
 package postgres
 
@@ -193,7 +194,7 @@ func TestPg_GetProfileStats(t *testing.T) {
 	assert.EqualValues(t, &storage.ProfileStats{
 		Address:    "address",
 		PostsCount: 1,
-		Stats: storage.Stats{
+		Stats: storage.PostStats{
 			"0001-01-01":                    1000000,
 			yersterday.Format("2006-01-02"): 1000010,
 			now.Format("2006-01-02"):        1000020,
@@ -202,7 +203,7 @@ func TestPg_GetProfileStats(t *testing.T) {
 	assert.EqualValues(t, &storage.ProfileStats{
 		Address:    "address_1",
 		PostsCount: 0,
-		Stats: storage.Stats{
+		Stats: storage.PostStats{
 			"0001-01-01":                    1000000,
 			yersterday.Format("2006-01-02"): 1000010,
 		},
@@ -210,7 +211,7 @@ func TestPg_GetProfileStats(t *testing.T) {
 	assert.EqualValues(t, &storage.ProfileStats{
 		Address:    "address_2",
 		PostsCount: 0,
-		Stats:      storage.Stats{},
+		Stats:      storage.PostStats{},
 	}, pp[2])
 }
 
@@ -613,7 +614,7 @@ func TestPg_GetStats(t *testing.T) {
 	require.NoError(t, err)
 
 	// nolint
-	assert.Equal(t, map[storage.PostID]storage.Stats{
+	assert.Equal(t, map[storage.PostID]storage.PostStats{
 		storage.PostID{"1", "1"}: {
 			today.Format("2006-01-02"):    2,
 			monthAgo.Format("2006-01-02"): 1,
@@ -632,7 +633,7 @@ func TestPg_AddPDV(t *testing.T) {
 	require.NoError(t, s.AddPDV(ctx, "addr", 10, time.Now()))
 }
 
-func TestPg_GetAllUsersStats(t *testing.T) {
+func TestPg_GetDecentrStats(t *testing.T) {
 	defer cleanup(t)
 
 	today := time.Now().UTC()
@@ -670,10 +671,36 @@ func TestPg_ResetAccount(t *testing.T) {
 
 		stats, err := s.GetProfileStats(ctx, "1")
 		require.NoError(t, err)
-		assert.Equal(t, []*storage.ProfileStats{{Address: "1", Stats: storage.Stats{}}}, stats)
+		assert.Equal(t, []*storage.ProfileStats{{Address: "1", Stats: storage.PostStats{}}}, stats)
 
 		return nil
 	}))
+}
+
+func TestPg_GetDDVStats(t *testing.T) {
+	defer cleanup(t)
+
+	// zero
+	stats, err := s.GetDDVStats(ctx)
+	require.NoError(t, err)
+	require.Len(t, stats, 0)
+
+	// two days
+	today := time.Now().UTC()
+	yesterday := today.Add(-time.Hour * 24)
+
+	require.NoError(t, s.AddPDV(ctx, "addr2", 5, today))
+	require.NoError(t, s.AddPDV(ctx, "addr", 10, today))
+
+	require.NoError(t, s.AddPDV(ctx, "addr2", -15, yesterday))
+	require.NoError(t, s.AddPDV(ctx, "addr", 10, yesterday))
+
+	stats, err = s.GetDDVStats(ctx)
+	require.NoError(t, err)
+
+	require.Len(t, stats, 2)
+	require.Equal(t, int64(15), stats[0].Value)
+	require.Equal(t, int64(-5), stats[1].Value)
 }
 
 func TestPg_WipeAccount_InTx(t *testing.T) {

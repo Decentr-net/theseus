@@ -16,6 +16,32 @@
   },
   "basePath": "/v1",
   "paths": {
+    "/ddv/stats": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "DDV"
+        ],
+        "summary": "Returns DDV stats.",
+        "operationId": "GetDDVStats",
+        "responses": {
+          "200": {
+            "description": "Stats",
+            "schema": {
+              "$ref": "#/definitions/DDVStats"
+            }
+          },
+          "500": {
+            "description": "internal server error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
     "/posts": {
       "get": {
         "produces": [
@@ -310,6 +336,25 @@
       "type": "integer",
       "format": "int32",
       "x-go-package": "github.com/Decentr-net/decentr/x/community/types"
+    },
+    "DDVStats": {
+      "type": "object",
+      "title": "DDVStats ...",
+      "properties": {
+        "stats": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StatsItem"
+          },
+          "x-go-name": "Stats"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Total"
+        }
+      },
+      "x-go-package": "github.com/Decentr-net/theseus/internal/server"
     },
     "DecentrStats": {
       "type": "object",

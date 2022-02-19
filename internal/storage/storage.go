@@ -39,9 +39,10 @@ type Storage interface {
 	AddPDV(ctx context.Context, address string, amount int64, timestamp time.Time) error
 
 	GetProfileStats(ctx context.Context, addr ...string) ([]*ProfileStats, error)
-	GetPostStats(ctx context.Context, id ...PostID) (map[PostID]Stats, error)
+	GetPostStats(ctx context.Context, id ...PostID) (map[PostID]PostStats, error)
 
 	GetDecentrStats(ctx context.Context) (*DecentrStats, error)
+	GetDDVStats(ctx context.Context) ([]*DDVStatsItem, error)
 
 	ResetAccount(ctx context.Context, owner string) error
 }
@@ -120,7 +121,7 @@ type Post struct {
 type ProfileStats struct {
 	Address    string
 	PostsCount uint16
-	Stats      Stats
+	Stats      PostStats
 }
 
 // DecentrStats represents all users stats.
@@ -129,5 +130,11 @@ type DecentrStats struct {
 	DDV int64   // Whole earned pdv
 }
 
-// Stats is map where key is date in RFC3339 format and value is uPDV count.
-type Stats map[string]int64
+// DDVStatsItem ...
+type DDVStatsItem struct {
+	Date  time.Time `json:"date"`
+	Value int64     `json:"value"`
+}
+
+// PostStats is a map where key is date in RFC3339 format and value is uPDV count.
+type PostStats map[string]int64
