@@ -349,8 +349,8 @@
           "x-go-name": "Stats"
         },
         "total": {
-          "type": "integer",
-          "format": "int64",
+          "type": "number",
+          "format": "double",
           "x-go-name": "Total"
         }
       },

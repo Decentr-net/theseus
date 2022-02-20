@@ -367,12 +367,12 @@ func (s server) getDDVStats(w http.ResponseWriter, r *http.Request) {
 	for _, item := range ddvStats {
 		stats = append(stats, StatsItem{
 			Date:  item.Date.Format("2006-01-02"),
-			Value: float64(item.Value),
+			Value: denominate(item.Value),
 		})
 	}
 
 	api.WriteOK(w, http.StatusOK, DDVStats{
-		Total: totalStats.DDV,
+		Total: denominate(totalStats.DDV),
 		Stats: stats,
 	})
 }

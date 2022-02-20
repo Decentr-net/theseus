@@ -59,7 +59,7 @@ type ProfileStats struct {
 // DDVStats ...
 // swagger:model
 type DDVStats struct {
-	Total int64       `json:"total"`
+	Total float64     `json:"total"`
 	Stats []StatsItem `json:"stats"`
 }
 

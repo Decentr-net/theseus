@@ -376,10 +376,10 @@ func Test_getDDVStats(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.JSONEq(t, `{
-      "total": 10000,
+      "total": 0.01,
       "stats": [
-          {"date": "2022-01-01", "value": 8000 },
-          {"date": "2022-01-02", "value": 10000 }
+          {"date": "2022-01-01", "value": 0.008},
+          {"date": "2022-01-02", "value": 0.01 }
        ]
     }`, w.Body.String())
 }
