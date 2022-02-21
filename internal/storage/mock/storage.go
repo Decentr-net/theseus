@@ -263,14 +263,14 @@ func (mr *MockStorageMockRecorder) GetProfileStats(ctx interface{}, addr ...inte
 }
 
 // GetPostStats mocks base method
-func (m *MockStorage) GetPostStats(ctx context.Context, id ...storage.PostID) (map[storage.PostID]storage.Stats, error) {
+func (m *MockStorage) GetPostStats(ctx context.Context, id ...storage.PostID) (map[storage.PostID]storage.PostStats, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx}
 	for _, a := range id {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetPostStats", varargs...)
-	ret0, _ := ret[0].(map[storage.PostID]storage.Stats)
+	ret0, _ := ret[0].(map[storage.PostID]storage.PostStats)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -295,6 +295,21 @@ func (m *MockStorage) GetDecentrStats(ctx context.Context) (*storage.DecentrStat
 func (mr *MockStorageMockRecorder) GetDecentrStats(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDecentrStats", reflect.TypeOf((*MockStorage)(nil).GetDecentrStats), ctx)
+}
+
+// GetDDVStats mocks base method
+func (m *MockStorage) GetDDVStats(ctx context.Context) ([]*storage.DDVStatsItem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDDVStats", ctx)
+	ret0, _ := ret[0].([]*storage.DDVStatsItem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDDVStats indicates an expected call of GetDDVStats
+func (mr *MockStorageMockRecorder) GetDDVStats(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDDVStats", reflect.TypeOf((*MockStorage)(nil).GetDDVStats), ctx)
 }
 
 // ResetAccount mocks base method

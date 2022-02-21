@@ -50,9 +50,17 @@ type SharePost struct {
 }
 
 // ProfileStats ...
+// swagger:model
 type ProfileStats struct {
 	PostsCount uint16      `json:"postsCount"`
 	Stats      []StatsItem `json:"stats"`
+}
+
+// DDVStats ...
+// swagger:model
+type DDVStats struct {
+	Total float64     `json:"total"`
+	Stats []StatsItem `json:"stats"`
 }
 
 // DecentrStats ...

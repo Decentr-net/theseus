@@ -56,6 +56,7 @@ func SetupRouter(s storage.Storage, r chi.Router, timeout time.Duration) {
 		r.Get("/posts/{owner}/{uuid}", srv.getPost)
 		r.Get("/posts/{slug}", srv.getSharePostBySlug)
 		r.Get("/profiles/stats", srv.getDecentrStats)
+		r.Get("/ddv/stats", srv.getDDVStats)
 		r.Get("/profiles/{address}/stats", srv.getProfileStats)
 	})
 }

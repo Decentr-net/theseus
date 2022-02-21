@@ -173,7 +173,7 @@ func (s pg) GetProfileStats(ctx context.Context, addr ...string) ([]*storage.Pro
 		out[i] = &storage.ProfileStats{
 			Address:    v.Address,
 			PostsCount: v.PostsCount,
-			Stats:      storage.Stats{},
+			Stats:      storage.PostStats{},
 		}
 
 		if v.Stats != nil {
@@ -398,9 +398,9 @@ func (s pg) ListPosts(ctx context.Context, p *storage.ListPostsParams) ([]*stora
 	return out, nil
 }
 
-func (s pg) GetPostStats(ctx context.Context, id ...storage.PostID) (map[storage.PostID]storage.Stats, error) {
+func (s pg) GetPostStats(ctx context.Context, id ...storage.PostID) (map[storage.PostID]storage.PostStats, error) {
 	if len(id) == 0 {
-		return map[storage.PostID]storage.Stats{}, nil
+		return map[storage.PostID]storage.PostStats{}, nil
 	}
 
 	owners, uuids := make([]string, len(id)), make([]string, len(id))
@@ -425,10 +425,10 @@ func (s pg) GetPostStats(ctx context.Context, id ...storage.PostID) (map[storage
 		return nil, fmt.Errorf("failed to select: %w", err)
 	}
 
-	out := make(map[storage.PostID]storage.Stats, len(res))
+	out := make(map[storage.PostID]storage.PostStats, len(res))
 
 	for _, v := range res {
-		var s storage.Stats
+		var s storage.PostStats
 		if err := json.Unmarshal(v.Stats, &s); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal stats: %w", err)
 		}
@@ -471,6 +471,18 @@ func (s pg) GetDecentrStats(ctx context.Context) (*storage.DecentrStats, error) 
 		ADV: statsDTO.ADV,
 		DDV: statsDTO.DDV,
 	}, nil
+}
+
+func (s pg) GetDDVStats(ctx context.Context) ([]*storage.DDVStatsItem, error) {
+	var stats []*storage.DDVStatsItem
+	err := sqlx.SelectContext(ctx, s.ext, &stats, `
+				SELECT timestamp::DATE as date, SUM(updv) as value
+				FROM updv
+				WHERE timestamp > NOW() -'90 day'::INTERVAL
+				GROUP BY date
+				ORDER BY date DESC
+	`)
+	return stats, err
 }
 
 func (s pg) ResetAccount(ctx context.Context, owner string) error {

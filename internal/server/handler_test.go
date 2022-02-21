@@ -78,12 +78,12 @@ func Test_listPosts(t *testing.T) {
 		{
 			Address:    "owner",
 			PostsCount: 1,
-			Stats:      storage.Stats{"0001-01-01": 1, "1970-01-01": 2},
+			Stats:      storage.PostStats{"0001-01-01": 1, "1970-01-01": 2},
 		},
 		{
 			Address:    "owner2",
 			PostsCount: 4,
-			Stats:      storage.Stats{"1970-01-02": 1},
+			Stats:      storage.PostStats{"1970-01-02": 1},
 		},
 	}, nil)
 
@@ -91,7 +91,7 @@ func Test_listPosts(t *testing.T) {
 		gomock.Any(),
 		storage.PostID{"owner", "uuid"},
 		storage.PostID{"owner2", "uuid2"},
-	).Return(map[storage.PostID]storage.Stats{
+	).Return(map[storage.PostID]storage.PostStats{
 		{"owner", "uuid"}:   {"1970-01-01": 1},
 		{"owner2", "uuid2"}: {"1970-01-01": 2},
 	}, nil)
@@ -199,14 +199,14 @@ func Test_getPost(t *testing.T) {
 		{
 			Address:    "owner",
 			PostsCount: 0,
-			Stats:      storage.Stats{},
+			Stats:      storage.PostStats{},
 		},
 	}, nil)
 
 	srv.EXPECT().GetPostStats(
 		gomock.Any(),
 		storage.PostID{"owner", "uuid"},
-	).Return(map[storage.PostID]storage.Stats{
+	).Return(map[storage.PostID]storage.PostStats{
 		{"owner", "uuid"}: {"1970-01-01": 1},
 	}, nil)
 
@@ -306,7 +306,7 @@ func Test_getProfileStats(t *testing.T) {
 	srv.EXPECT().GetProfileStats(gomock.Any(), "owner").Return([]*storage.ProfileStats{
 		{
 			PostsCount: 1,
-			Stats:      storage.Stats{"1970-01-01": 1},
+			Stats:      storage.PostStats{"1970-01-01": 1},
 		},
 	}, nil)
 
@@ -343,4 +343,43 @@ func Test_getDecentrStats(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.JSONEq(t, `{ "adv":1.01, "ddv":2 }`, w.Body.String())
+}
+
+func Test_getDDVStats(t *testing.T) {
+	r, err := http.NewRequest(http.MethodGet, "/v1/ddv/stats", nil)
+	require.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	srv := mock.NewMockStorage(ctrl)
+
+	srv.EXPECT().GetDecentrStats(gomock.Any()).Return(&storage.DecentrStats{
+		ADV: 5000,
+		DDV: 10000,
+	}, nil)
+
+	date := func(year int, month time.Month, day int) time.Time {
+		return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+	}
+
+	srv.EXPECT().GetDDVStats(gomock.Any()).Return([]*storage.DDVStatsItem{
+		{Date: date(2022, 1, 1), Value: 1000},
+		{Date: date(2022, 1, 2), Value: 2000},
+	}, nil)
+
+	router := chi.NewRouter()
+	s := server{s: srv}
+	router.Get("/v1/ddv/stats", s.getDDVStats)
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.JSONEq(t, `{
+      "total": 0.01,
+      "stats": [
+          {"date": "2022-01-01", "value": 0.008},
+          {"date": "2022-01-02", "value": 0.01 }
+       ]
+    }`, w.Body.String())
 }
