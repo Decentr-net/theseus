@@ -68,21 +68,23 @@ const (
 	// AscendingOrder ...
 	AscendingOrder OrderType = "asc"
 	// DescendingOrder ...
-	DescendingOrder = "desc"
+	DescendingOrder OrderType = "desc"
 )
 
 // ListPostsParams ...
 type ListPostsParams struct {
-	SortBy     SortType
-	OrderBy    OrderType
-	Limit      uint16
-	Category   *community.Category
-	Owner      *string
-	LikedBy    *string
-	FollowedBy *string
-	After      *PostID
-	From       *uint64
-	To         *uint64
+	SortBy          SortType
+	OrderBy         OrderType
+	ExcludeNegative bool
+	ExcludeNeutral  bool
+	Limit           uint16
+	Category        *community.Category
+	Owner           *string
+	LikedBy         *string
+	FollowedBy      *string
+	After           *PostID
+	From            *uint64
+	To              *uint64
 }
 
 // PostID ...

@@ -136,6 +136,16 @@
             "description": "adds liked flag to response",
             "name": "requestedBy",
             "in": "query"
+          },
+          {
+            "description": "excludes posts with negative pdv",
+            "name": "excludeNegative",
+            "in": "query"
+          },
+          {
+            "description": "excludes posts with pdv = 0",
+            "name": "excludeNeutral",
+            "in": "query"
           }
         ],
         "responses": {

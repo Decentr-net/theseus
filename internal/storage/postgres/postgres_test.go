@@ -495,6 +495,37 @@ func TestPg_ListPosts(t *testing.T) {
 			ids: []string{"5", "3", "2", "1", "4"},
 		},
 		{
+			name: "pdv_exclude_negative_desc",
+			p: storage.ListPostsParams{
+				ExcludeNegative: true,
+				SortBy:          storage.PDVSortType,
+				OrderBy:         storage.DescendingOrder,
+				Limit:           100,
+			},
+			ids: []string{"5", "3"},
+		},
+		{
+			name: "pdv_exclude_neutral_desc",
+			p: storage.ListPostsParams{
+				ExcludeNeutral: true,
+				SortBy:         storage.PDVSortType,
+				OrderBy:        storage.DescendingOrder,
+				Limit:          100,
+			},
+			ids: []string{"5", "2", "1", "4"},
+		},
+		{
+			name: "pdv_exclude_negative_and_neutral_desc",
+			p: storage.ListPostsParams{
+				ExcludeNegative: true,
+				ExcludeNeutral:  true,
+				SortBy:          storage.PDVSortType,
+				OrderBy:         storage.DescendingOrder,
+				Limit:           100,
+			},
+			ids: []string{"5"},
+		},
+		{
 			name: "category",
 			p: storage.ListPostsParams{
 				SortBy:   storage.CreatedAtSortType,

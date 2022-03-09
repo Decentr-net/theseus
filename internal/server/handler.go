@@ -93,6 +93,14 @@ func (s server) listPosts(w http.ResponseWriter, r *http.Request) {
 	//   description: adds liked flag to response
 	//   required: false
 	//   example: decentr1ltx6yymrs8eq4nmnhzfzxj6tspjuymh8mgd6gz
+	// - name: excludeNegative
+	//   in: query
+	//   description: excludes posts with negative pdv
+	//   required: false
+	// - name: excludeNeutral
+	//   in: query
+	//   description: excludes posts with pdv = 0
+	//   required: false
 	// responses:
 	//   '200':
 	//     description: Posts
@@ -449,6 +457,14 @@ func extractListParamsFromQuery(q url.Values) (*storage.ListPostsParams, error) 
 	case "":
 	default:
 		return nil, fmt.Errorf("%w: invalid orderBy", errInvalidRequest)
+	}
+
+	if q.Has("excludeNegative") {
+		out.ExcludeNegative = true
+	}
+
+	if q.Has("excludeNeutral") {
+		out.ExcludeNeutral = true
 	}
 
 	if s := q.Get("category"); s != "" {

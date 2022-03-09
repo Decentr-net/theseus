@@ -22,7 +22,7 @@ import (
 func Test_listPosts(t *testing.T) {
 	timestamp := time.Unix(100, 0)
 
-	query := "category=1&sortBy=likesCount&orderBy=asc&limit=100&after=1234/4321&from=1&to=1000&owner=addr&likedBy=1234&followedBy=111&requestedBy=owner"
+	query := "category=1&sortBy=likesCount&orderBy=asc&limit=100&after=1234/4321&from=1&to=1000&owner=addr&likedBy=1234&followedBy=111&requestedBy=owner&excludeNeutral&excludeNegative"
 
 	r, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/posts?%s", query), nil)
 	require.NoError(t, err)
@@ -45,6 +45,8 @@ func Test_listPosts(t *testing.T) {
 		}, *p.After)
 		assert.EqualValues(t, 1, *p.From)
 		assert.EqualValues(t, 1000, *p.To)
+		assert.True(t, p.ExcludeNegative)
+		assert.True(t, p.ExcludeNeutral)
 	}).Return([]*storage.Post{
 		{
 			UUID:         "uuid",
