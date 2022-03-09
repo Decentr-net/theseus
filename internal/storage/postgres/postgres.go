@@ -568,6 +568,14 @@ func whereClausesFromListPostsParams(p *storage.ListPostsParams) ([]string, []in
 		args = append(args, time.Unix(int64(*p.To), 0).UTC())
 	}
 
+	if p.ExcludeNegative {
+		where = append(where, `updv >= 0`)
+	}
+
+	if p.ExcludeNeutral {
+		where = append(where, `updv <> 0`)
+	}
+
 	if p.After != nil {
 		comp := "<"
 		if p.OrderBy == storage.AscendingOrder {
