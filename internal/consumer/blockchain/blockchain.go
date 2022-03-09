@@ -77,15 +77,22 @@ func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Blo
 			log.Info("processing block")
 			log.WithField("msgs", fmt.Sprintf("%+v", block.Messages())).Debug()
 
+			needRefreshPostsView := false
+			needRefreshStatsView := block.Height%50 == 0
+
 			for _, msg := range block.Messages() {
 				var err error
 
 				switch msg := msg.(type) {
 				case *communitytypes.MsgCreatePost:
+					needRefreshPostsView = true
 					err = processMsgCreatePost(ctx, s, block.Time, msg)
 				case *communitytypes.MsgDeletePost:
+					needRefreshPostsView = true
 					err = processMsgDeletePost(ctx, s, block.Time, *msg)
 				case *communitytypes.MsgSetLike:
+					needRefreshPostsView = true
+					needRefreshStatsView = true
 					err = processMsgSetLike(ctx, s, block.Time, *msg)
 				case *communitytypes.MsgFollow:
 					err = processMsgFollow(ctx, s, *msg)
@@ -108,7 +115,7 @@ func (b blockchain) processBlockFunc(ctx context.Context) func(block ariadne.Blo
 				return fmt.Errorf("failed to set height: %w", err)
 			}
 
-			if err := s.RefreshViews(ctx); err != nil {
+			if err := s.RefreshViews(ctx, needRefreshPostsView, needRefreshStatsView); err != nil {
 				return fmt.Errorf("failed to refresh views: %w", err)
 			}
 

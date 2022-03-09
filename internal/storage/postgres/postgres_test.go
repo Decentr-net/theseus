@@ -1,4 +1,5 @@
-//+build integration
+//go:build integration
+// +build integration
 
 package postgres
 
@@ -127,7 +128,7 @@ func cleanup(t *testing.T) {
 	_, err = db.ExecContext(ctx, `DELETE FROM updv`)
 	require.NoError(t, err)
 
-	require.NoError(t, s.RefreshViews(ctx))
+	require.NoError(t, s.RefreshViews(ctx, true, true))
 }
 
 func TestPg_GetHeight(t *testing.T) {
@@ -184,7 +185,7 @@ func TestPg_GetProfileStats(t *testing.T) {
 	require.NoError(t, s.AddPDV(ctx, "address", 10, now))
 	require.NoError(t, s.AddPDV(ctx, "address_1", 10, yersterday))
 
-	require.NoError(t, s.RefreshViews(ctx))
+	require.NoError(t, s.RefreshViews(ctx, true, true))
 
 	pp, err := s.GetProfileStats(ctx, "address", "address_1", "address_2")
 	require.NoError(t, err)
@@ -228,7 +229,7 @@ func TestPg_CreatePost(t *testing.T) {
 	}
 
 	require.NoError(t, s.CreatePost(ctx, &expected))
-	require.NoError(t, s.RefreshViews(ctx))
+	require.NoError(t, s.RefreshViews(ctx, true, true))
 
 	p, err := s.GetPost(ctx, storage.PostID{expected.Owner, expected.UUID})
 	require.NoError(t, err)
@@ -256,7 +257,7 @@ func TestPg_GetPostBySlug(t *testing.T) {
 	}
 
 	require.NoError(t, s.CreatePost(ctx, &expected))
-	require.NoError(t, s.RefreshViews(ctx))
+	require.NoError(t, s.RefreshViews(ctx, true, true))
 	p, err := s.GetPost(ctx, storage.PostID{expected.Owner, expected.UUID})
 	require.NoError(t, err)
 	require.NotEmpty(t, p.Slug)
@@ -296,10 +297,10 @@ func TestPg_DeletePost(t *testing.T) {
 	}
 
 	require.NoError(t, s.CreatePost(ctx, &p))
-	require.NoError(t, s.RefreshViews(ctx))
+	require.NoError(t, s.RefreshViews(ctx, true, true))
 
 	require.NoError(t, s.DeletePost(ctx, storage.PostID{p.Owner, p.UUID}, p.CreatedAt, "moderator"))
-	require.NoError(t, s.RefreshViews(ctx))
+	require.NoError(t, s.RefreshViews(ctx, true, true))
 
 	_, err := s.GetPost(ctx, storage.PostID{p.Owner, p.UUID})
 	require.Equal(t, storage.ErrNotFound, err)
@@ -325,7 +326,7 @@ func TestPg_GetLiked(t *testing.T) {
 
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"1", "1"}, -1, time.Now(), "3"))
 
-	require.NoError(t, s.RefreshViews(ctx))
+	require.NoError(t, s.RefreshViews(ctx, true, true))
 
 	likes, err := s.GetLikes(ctx, "3", storage.PostID{"1", "1"}, storage.PostID{"2", "2"})
 	require.NoError(t, err)
@@ -353,7 +354,7 @@ func TestPg_SetLike(t *testing.T) {
 	require.NoError(t, s.SetLike(ctx, storage.PostID{p.Owner, p.UUID}, 1, p.CreatedAt, "liker"))
 	require.NoError(t, s.SetLike(ctx, storage.PostID{p.Owner, p.UUID}, -1, p.CreatedAt, "liker2"))
 	require.NoError(t, s.SetLike(ctx, storage.PostID{p.Owner, p.UUID}, -1, p.CreatedAt, "liker3"))
-	require.NoError(t, s.RefreshViews(ctx))
+	require.NoError(t, s.RefreshViews(ctx, true, true))
 
 	post, err := s.GetPost(ctx, storage.PostID{p.Owner, p.UUID})
 	require.NoError(t, err)
@@ -442,7 +443,7 @@ func TestPg_ListPosts(t *testing.T) {
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, -1, time.Unix(1, 0), "17"))
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"4", "4"}, -1, time.Unix(1, 0), "18"))
 
-	require.NoError(t, s.RefreshViews(ctx))
+	require.NoError(t, s.RefreshViews(ctx, true, true))
 
 	cat := community.Category(3)
 	owner := "2"
@@ -607,7 +608,7 @@ func TestPg_GetStats(t *testing.T) {
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, 1, yesterday, "3"))
 	require.NoError(t, s.SetLike(ctx, storage.PostID{"2", "2"}, 1, monthAgo, "4"))
 
-	require.NoError(t, s.RefreshViews(ctx))
+	require.NoError(t, s.RefreshViews(ctx, true, true))
 
 	stats, err := s.GetPostStats(ctx, storage.PostID{"1", "1"}, storage.PostID{"2", "2"})
 	require.NoError(t, err)
@@ -661,7 +662,7 @@ func TestPg_ResetAccount(t *testing.T) {
 		require.NoError(t, s.Follow(ctx, "1", "2"))
 		require.NoError(t, s.Follow(ctx, "2", "1"))
 		require.NoError(t, s.AddPDV(ctx, "1", 10, time.Now()))
-		require.NoError(t, s.RefreshViews(ctx))
+		require.NoError(t, s.RefreshViews(ctx, true, true))
 
 		require.NoError(t, s.ResetAccount(ctx, "1"))
 

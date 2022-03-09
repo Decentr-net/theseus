@@ -201,7 +201,7 @@ func TestBlockchain_processBlockFunc(t *testing.T) {
 				return f(s)
 			})
 			s.EXPECT().SetHeight(gomock.Any(), uint64(1)).Return(nil)
-			s.EXPECT().RefreshViews(gomock.Any()).Return(nil)
+			s.EXPECT().RefreshViews(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			tc.expect(s)
 
 			msg, err := ctypes.NewAnyWithValue(tc.msg)

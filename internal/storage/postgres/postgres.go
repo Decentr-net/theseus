@@ -112,17 +112,21 @@ func (s pg) SetHeight(ctx context.Context, height uint64) error {
 	return nil
 }
 
-func (s pg) RefreshViews(ctx context.Context) error {
-	if _, err := s.ext.ExecContext(ctx, `REFRESH MATERIALIZED VIEW calculated_post`); err != nil {
-		return fmt.Errorf("failed to refresh calculated_post view: failed to exec: %w", err)
+func (s pg) RefreshViews(ctx context.Context, postView, statsView bool) error {
+	if postView {
+		if _, err := s.ext.ExecContext(ctx, `REFRESH MATERIALIZED VIEW calculated_post`); err != nil {
+			return fmt.Errorf("failed to refresh calculated_post view: failed to exec: %w", err)
+		}
+
+		if _, err := s.ext.ExecContext(ctx, `REFRESH MATERIALIZED VIEW stats`); err != nil {
+			return fmt.Errorf("failed to refresh stats view: failed to exec: %w", err)
+		}
 	}
 
-	if _, err := s.ext.ExecContext(ctx, `REFRESH MATERIALIZED VIEW stats`); err != nil {
-		return fmt.Errorf("failed to refresh stats view: failed to exec: %w", err)
-	}
-
-	if _, err := s.ext.ExecContext(ctx, `REFRESH MATERIALIZED VIEW pdv_stats`); err != nil {
-		return fmt.Errorf("failed to refresh pdv_stats view: failed to exec: %w", err)
+	if statsView {
+		if _, err := s.ext.ExecContext(ctx, `REFRESH MATERIALIZED VIEW pdv_stats`); err != nil {
+			return fmt.Errorf("failed to refresh pdv_stats view: failed to exec: %w", err)
+		}
 	}
 
 	return nil
@@ -502,7 +506,7 @@ func (s pg) ResetAccount(ctx context.Context, owner string) error {
 		return fmt.Errorf("failed to delete updv: %w", err)
 	}
 
-	return s.RefreshViews(ctx)
+	return s.RefreshViews(ctx, true, true)
 }
 
 // New creates new instance of pg.

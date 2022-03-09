@@ -22,7 +22,7 @@ type Storage interface {
 	InTx(ctx context.Context, f func(s Storage) error) error
 	SetHeight(ctx context.Context, height uint64) error
 	GetHeight(ctx context.Context) (uint64, error)
-	RefreshViews(ctx context.Context) error
+	RefreshViews(ctx context.Context, postView, statsView bool) error
 
 	Follow(ctx context.Context, follower, followee string) error
 	Unfollow(ctx context.Context, follower, followee string) error

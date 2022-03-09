@@ -80,17 +80,17 @@ func (mr *MockStorageMockRecorder) GetHeight(ctx interface{}) *gomock.Call {
 }
 
 // RefreshViews mocks base method
-func (m *MockStorage) RefreshViews(ctx context.Context) error {
+func (m *MockStorage) RefreshViews(ctx context.Context, postView, statsView bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RefreshViews", ctx)
+	ret := m.ctrl.Call(m, "RefreshViews", ctx, postView, statsView)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RefreshViews indicates an expected call of RefreshViews
-func (mr *MockStorageMockRecorder) RefreshViews(ctx interface{}) *gomock.Call {
+func (mr *MockStorageMockRecorder) RefreshViews(ctx, postView, statsView interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefreshViews", reflect.TypeOf((*MockStorage)(nil).RefreshViews), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefreshViews", reflect.TypeOf((*MockStorage)(nil).RefreshViews), ctx, postView, statsView)
 }
 
 // Follow mocks base method
