@@ -459,11 +459,11 @@ func extractListParamsFromQuery(q url.Values) (*storage.ListPostsParams, error) 
 		return nil, fmt.Errorf("%w: invalid orderBy", errInvalidRequest)
 	}
 
-	if q.Has("excludeNegative") {
+	if _, ok := q["excludeNegative"]; ok {
 		out.ExcludeNegative = true
 	}
 
-	if q.Has("excludeNeutral") {
+	if _, ok := q["excludeNeutral"]; ok {
 		out.ExcludeNeutral = true
 	}
 
