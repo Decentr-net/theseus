@@ -378,7 +378,11 @@ func (s pg) ListPosts(ctx context.Context, p *storage.ListPostsParams) ([]*stora
 	}
 
 	if wheres, whereArgs := whereClausesFromListPostsParams(p); len(wheres) > 0 {
-		b.WriteString(` WHERE ` + strings.Join(wheres, " AND ")) // nolint: gosec
+		toJoin := make([]string, len(wheres))
+		for i, v := range wheres {
+			toJoin[i] = fmt.Sprintf("(%s)", v)
+		}
+		b.WriteString(` WHERE ` + strings.Join(toJoin, " AND ")) // nolint: gosec
 		args = append(args, whereArgs...)
 	}
 
