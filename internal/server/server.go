@@ -23,6 +23,7 @@ import (
 
 	"github.com/Decentr-net/go-api"
 
+	mm "github.com/Decentr-net/theseus/internal/middleware"
 	"github.com/Decentr-net/theseus/internal/storage"
 )
 
@@ -55,8 +56,8 @@ func SetupRouter(s storage.Storage, r chi.Router, timeout time.Duration) {
 		r.Get("/posts", srv.listPosts)
 		r.Get("/posts/{owner}/{uuid}", srv.getPost)
 		r.Get("/posts/{slug}", srv.getSharePostBySlug)
-		r.Get("/profiles/stats", srv.getDecentrStats)
-		r.Get("/ddv/stats", srv.getDDVStats)
+		r.Get("/profiles/stats", mm.Cached(10*time.Minute, srv.getDecentrStats))
+		r.Get("/ddv/stats", mm.Cached(10*time.Minute, srv.getDDVStats))
 		r.Get("/profiles/{address}/stats", srv.getProfileStats)
 	})
 }
