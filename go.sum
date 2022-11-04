@@ -91,11 +91,10 @@ github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3
 github.com/DataDog/zstd v1.4.1/go.mod h1:1jcaCB/ufaK+sKp1NBhlGmpz41jOoPQ35bpF36t7BBo=
 github.com/DataDog/zstd v1.4.5 h1:EndNeuB0l9syBZhut0wns3gV1hL8zX8LIu6ZiVHWLIQ=
 github.com/DataDog/zstd v1.4.5/go.mod h1:1jcaCB/ufaK+sKp1NBhlGmpz41jOoPQ35bpF36t7BBo=
-github.com/Decentr-net/ariadne v1.1.1 h1:dd5ViQzLcFEuQJKchSgSH1SQvQUwtM4ScHQGO9VqNRw=
-github.com/Decentr-net/ariadne v1.1.1/go.mod h1:nHIdoOWUKqM3jh2To+NmNcvTLW1FK5Lj3gpSRAAPdfM=
-github.com/Decentr-net/decentr v1.5.0/go.mod h1:lDTMpDxM1VYIyZVwv78qqxfv9lpFUphL3JhuyUKOJy0=
-github.com/Decentr-net/decentr v1.5.5 h1:QccOEvjP8SXZoiAJ1hi0Jycvdf2hksYjuRbXLRF8HPo=
-github.com/Decentr-net/decentr v1.5.5/go.mod h1:yae5oJUGrZLm6C9b8/Mnrbd5JzF6mlnpzIdqO5A+bAc=
+github.com/Decentr-net/ariadne v1.2.0 h1:SII5sUgVCLC3qo1OObK/8AwoLiiqY6Nn+j+vSLHZNbs=
+github.com/Decentr-net/ariadne v1.2.0/go.mod h1:jCxLhnzWfPb5H1WlRmK0/3RQLFAkcFlf7QlQpZrJh98=
+github.com/Decentr-net/decentr v1.6.2 h1:uFWjViL9vvWhtUvEpjDdhtgrboCBt/8+bz3PoAtNZ6E=
+github.com/Decentr-net/decentr v1.6.2/go.mod h1:UoqlPUHi7yQs0Cvlr/kyPZ6EYvVbcnJBdLJAEHqOjHY=
 github.com/Decentr-net/go-api v0.1.0 h1:aF2T6pd0N3TX0KgNe5EmEgqnQBHSGnAQonYmwP5nd74=
 github.com/Decentr-net/go-api v0.1.0/go.mod h1:nEj17MvZcZqnjyyMOYsQpBjKneKIVE2IFUFMp9BLhYA=
 github.com/Decentr-net/logrus v0.7.2-0.20210316223658-7a9b48625189/go.mod h1:zhIP1LNjBhoEQvIqKJbw0MIoHN43GjmnZI+ElQ73ab0=
@@ -568,7 +567,6 @@ github.com/gin-contrib/sse v0.1.0/go.mod h1:RHrZQHXnP2xjPF+u1gW/2HnVO7nvIa9PG3Gm
 github.com/gin-gonic/gin v1.4.0/go.mod h1:OW2EZn3DO8Ln9oIKOvM++LBO+5UPHJJDH72/q/3rZdM=
 github.com/gin-gonic/gin v1.6.3/go.mod h1:75u5sXoLsGZoRN5Sgbi1eraJ4GU3++wFwWzhwvtwp4M=
 github.com/gin-gonic/gin v1.7.0 h1:jGB9xAJQ12AIGNB4HguylppmDK1Am9ppF7XnGXXJuoU=
-github.com/gin-gonic/gin v1.7.0/go.mod h1:jD2toBW3GZUr5UMcdrwQA10I7RuaFOl/SGeDjXkfUtY=
 github.com/go-check/check v0.0.0-20180628173108-788fd7840127/go.mod h1:9ES+weclKsC9YodN5RgxqK/VD9HM9JsCSh7rNhMZE98=
 github.com/go-chi/chi v4.1.2+incompatible h1:fGFk2Gmi/YKXk0OmGfBh0WgmN3XB8lVnEyNz34tQRec=
 github.com/go-chi/chi v4.1.2+incompatible/go.mod h1:eB3wogJHnLi3x/kFX2A+IbTBlXxmMeXJVKy9tTv1XzQ=
@@ -616,9 +614,8 @@ github.com/go-playground/locales v0.13.0 h1:HyWk6mgj5qFqCT5fjGBuRArbVDfE4hi8+e8c
 github.com/go-playground/locales v0.13.0/go.mod h1:taPMhCMXrRLJO55olJkUXHZBHCxTMfnGwq/HNwmWNS8=
 github.com/go-playground/universal-translator v0.17.0 h1:icxd5fm+REJzpZx7ZfpaD876Lmtgy7VtROAbHHXk8no=
 github.com/go-playground/universal-translator v0.17.0/go.mod h1:UkSxE5sNxxRwHyU+Scu5vgOQjsIJAF8j9muTVoKLVtA=
+github.com/go-playground/validator/v10 v10.2.0 h1:KgJ0snyC2R9VXYN2rneOtQcw5aHQB1Vv0sFl1UcHBOY=
 github.com/go-playground/validator/v10 v10.2.0/go.mod h1:uOYAAleCW8F/7oMFd6aG0GOhaH6EGOAJShg8Id5JGkI=
-github.com/go-playground/validator/v10 v10.4.1 h1:pH2c5ADXtd66mxoE0Zm9SUhxE20r7aM3F26W0hOn+GE=
-github.com/go-playground/validator/v10 v10.4.1/go.mod h1:nlOn6nFhuKACm19sB/8EGNn9GlaMV7XkbRSipzJ0Ii4=
 github.com/go-redis/redis v6.15.8+incompatible/go.mod h1:NAIEuMOZ/fxfXJIrKDQDz8wamY7mA7PouImQ2Jvg6kA=
 github.com/go-redis/redis v6.15.9+incompatible h1:K0pv1D7EQUjfyoMql+r/jZqCLizCGKFlFgcHWWmHQjg=
 github.com/go-redis/redis v6.15.9+incompatible/go.mod h1:NAIEuMOZ/fxfXJIrKDQDz8wamY7mA7PouImQ2Jvg6kA=

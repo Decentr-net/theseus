@@ -14,15 +14,16 @@ github.com/ChainSafe/go-schnorrkel
 # github.com/DataDog/zstd v1.4.5
 ## explicit
 github.com/DataDog/zstd
-# github.com/Decentr-net/ariadne v1.1.1
-## explicit; go 1.16
+# github.com/Decentr-net/ariadne v1.2.0
+## explicit; go 1.19
 github.com/Decentr-net/ariadne
 github.com/Decentr-net/ariadne/mock
-# github.com/Decentr-net/decentr v1.5.5
-## explicit; go 1.16
+# github.com/Decentr-net/decentr v1.6.2
+## explicit; go 1.19
 github.com/Decentr-net/decentr/app
 github.com/Decentr-net/decentr/app/ante
 github.com/Decentr-net/decentr/app/params
+github.com/Decentr-net/decentr/app/upgrade/v160
 github.com/Decentr-net/decentr/config
 github.com/Decentr-net/decentr/docs
 github.com/Decentr-net/decentr/x/community
@@ -227,6 +228,10 @@ github.com/cosmos/cosmos-sdk/x/auth/vesting/client/cli
 github.com/cosmos/cosmos-sdk/x/auth/vesting/exported
 github.com/cosmos/cosmos-sdk/x/auth/vesting/types
 github.com/cosmos/cosmos-sdk/x/authz
+github.com/cosmos/cosmos-sdk/x/authz/client/cli
+github.com/cosmos/cosmos-sdk/x/authz/keeper
+github.com/cosmos/cosmos-sdk/x/authz/module
+github.com/cosmos/cosmos-sdk/x/authz/simulation
 github.com/cosmos/cosmos-sdk/x/bank
 github.com/cosmos/cosmos-sdk/x/bank/client/cli
 github.com/cosmos/cosmos-sdk/x/bank/client/rest
