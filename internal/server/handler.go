@@ -13,11 +13,17 @@ import (
 
 	community "github.com/Decentr-net/decentr/x/community/types"
 	"github.com/Decentr-net/go-api"
-
 	"github.com/Decentr-net/theseus/internal/storage"
 )
 
-var errInvalidRequest = errors.New("invalid request")
+var (
+	errInvalidRequest = errors.New("invalid request")
+
+	topPostID = storage.PostID{
+		Owner: "decentr1jh0hj2700t289wdwy4pfklffwl4zjvf0zz80ld",
+		UUID:  "1e20d30a-7873-49d2-91c2-22b6036c24fe",
+	}
+)
 
 func (s server) listPosts(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation GET /posts Community ListPosts
@@ -125,6 +131,20 @@ func (s server) listPosts(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		api.WriteInternalErrorf(r.Context(), w, "failed to list posts: %s", err.Error())
 		return
+	}
+
+	// first page
+	if params.After == nil {
+		topPost, err := s.s.GetPost(r.Context(), topPostID)
+		if err != nil && !errors.Is(err, storage.ErrNotFound) {
+			api.WriteInternalErrorf(r.Context(), w, "failed to get top post: %s", err.Error())
+			return
+		}
+
+		if topPost != nil {
+			// prepend post
+			posts = append([]*storage.Post{topPost}, posts[:len(posts)-1]...)
+		}
 	}
 
 	profileStats, err := s.s.GetProfileStats(r.Context(), extractProfileIDsFromPosts(posts)...)
