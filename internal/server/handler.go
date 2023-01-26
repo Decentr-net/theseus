@@ -21,7 +21,7 @@ var (
 
 	topPostID = storage.PostID{
 		Owner: "decentr1jh0hj2700t289wdwy4pfklffwl4zjvf0zz80ld",
-		UUID:  "1e20d30a-7873-49d2-91c2-22b6036c24fe",
+		UUID:  "337ce3a2-9477-4e16-9799-6a9c9ad99c12",
 	}
 )
 
